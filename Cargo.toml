@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/insert-disc-core"]
+members = ["crates/insert-disc-core", "crates/insert-disc-host"]
 # Spikes são descartáveis e têm seus próprios Cargo.toml/target.
 exclude = ["spikes"]
 

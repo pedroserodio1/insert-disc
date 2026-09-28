@@ -51,6 +51,9 @@ impl FakeIsoDrive {
         }
     }
 
+    pub fn capabilities_now(&self) -> Capabilities {
+        self.caps
+    }
     pub fn set_capabilities(&mut self, caps: Capabilities) {
         self.caps = caps;
     }
