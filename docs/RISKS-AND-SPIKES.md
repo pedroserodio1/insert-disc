@@ -38,6 +38,7 @@ Legenda de hardware: **—** nenhum · **drive** drive USB · **drive+mídia** d
 - **Como validar:** registrar e comparar, por latência e confiabilidade, (a) `WM_DEVICECHANGE`, (b) WMI `Win32_CDROMDrive.MediaLoaded` por polling e (c) consulta direta de volume por polling. Fazer isso com (1) ISO montada e desmontada e (2) drive físico com troca de disco.
 - **Sucesso:** um mecanismo detecta 20 de 20 inserções e remoções no drive físico, com latência aceitável (limite a definir) e identificação estável da unidade escolhida pelo usuário. Também fica documentado como a ISO montada se comporta (mesma unidade ou unidade nova).
 - **Falha:** nenhum evento confiável. Nesse caso, polling com o intervalo medido vira o padrão, e `media_events = no`.
+- **Resultado parcial (2026-09-28):** só a triagem por ISO foi feita. Montar uma ISO cria uma unidade virtual nova (`Microsoft Virtual DVD-ROM`) e `Win32_CDROMDrive.MediaLoaded`/`VolumeName` refletem a mídia; o polling funciona. **Falta:** eventos `WM_DEVICECHANGE`, latência medida e o comportamento do drive USB físico (exige hardware).
 
 ### W3. Classificação da mídia
 
@@ -66,6 +67,7 @@ Legenda de hardware: **—** nenhum · **drive** drive USB · **drive+mídia** d
 - **Como validar:** com o PC do autor (múltiplas bibliotecas em discos diferentes, se houver): localizar a Steam, listar jogos instalados, achar capas e lançar pelos três esquemas de URI.
 - **Sucesso:** lista completa e correta de instalados; capa encontrada para a maioria; esquema de URI escolhido com justificativa.
 - **Falha:** parsing frágil. Nesse caso, a importação vira "melhor esforço" com edição manual; capas faltantes caem em placeholder ou no serviço online.
+- **Resultado (2026-09-28): sucesso** ([spikes/w6-steam](../spikes/w6-steam/README.md)). Steam localizada pelo registro, 2 bibliotecas em discos diferentes, 26 jogos listados e o handler `steam://` confirmado. **Só 14 de 26 (54%) têm capa retrato no cache local**; os outros 12 só têm ícone e logo. As capas online opcionais passam a ser necessárias. **Não verificado:** qual esquema de URI usar (`run`, `rungameid`, `launch`).
 
 ### W7. Lançamento de processos
 
@@ -73,6 +75,7 @@ Legenda de hardware: **—** nenhum · **drive** drive USB · **drive+mídia** d
 - **Como validar:** executável com espaços no caminho e nos args; diretório de trabalho; emulador com ROM; launcher que abre outro processo e sai; executável que exige elevação (sem e com `requires_elevation`).
 - **Sucesso:** todos lançam corretamente, sem shell; um executável que exige elevação produz o prompt do UAC (quando configurado) ou um erro claro (quando não).
 - **Falha:** algum caso exige shell. Nesse caso, documentar e restringir, nunca abrir exceção silenciosa.
+- **Resultado (2026-09-28): sucesso parcial** ([spikes/w7-launch](../spikes/w7-launch/README.md)). Sem shell, argumentos hostis chegam intactos, com espaços no caminho; `NotFound` é distinguível; o `spawn` não bloqueia. `.bat` com argumentos foi seguro no Rust 1.93 nos casos testados, mas a política continua conservadora ([Q13](OPEN-QUESTIONS.md#q13-bat-e-cmd-como-executável)). **Não verificado:** abrir `steam://` por `explorer.exe` e elevação por UAC.
 
 ### W8. Tela cheia e foco
 
@@ -108,6 +111,7 @@ Legenda de hardware: **—** nenhum · **drive** drive USB · **drive+mídia** d
 - **Como validar:** ler `GAME.INI` e rótulo de ISOs geradas pelo IMAPI2FS e pelo próprio drive falso; ISO truncada.
 - **Sucesso:** leitura correta, e ISO corrompida vira erro sem pânico.
 - **Falha:** implementar a leitura mínima (PVD + diretório raiz) ou montar via Windows.
+- **Resultado (2026-09-28): sucesso.** O leitor e o gerador de ISO 9660 estão em `insert-disc-core` (`iso.rs`), com testes de imagem truncada e corrompida (sem pânico). O **Windows montou a ISO gerada** como unidade `CDFS` com rótulo `HOLLOW_KNIGHT` e leu o `GAME.INI` (ver [TESTING-WITH-ISO](TESTING-WITH-ISO.md#montagem-nativa-no-windows)). Sem dependência externa; a "leitura mínima" foi a escolhida.
 
 ### W13. Desempenho de CSS 3D no WebView2
 

@@ -1,0 +1,9 @@
+[package]
+name = "spike-w7-launch"
+version = "0.0.0"
+edition = "2021"
+publish = false
+default-run = "spike-w7-launch"
+license = "MIT OR Apache-2.0"
+
+[workspace]
