@@ -38,7 +38,7 @@ Legenda de hardware: **—** nenhum · **drive** drive USB · **drive+mídia** d
 - **Como validar:** registrar e comparar, por latência e confiabilidade, (a) `WM_DEVICECHANGE`, (b) WMI `Win32_CDROMDrive.MediaLoaded` por polling e (c) consulta direta de volume por polling. Fazer isso com (1) ISO montada e desmontada e (2) drive físico com troca de disco.
 - **Sucesso:** um mecanismo detecta 20 de 20 inserções e remoções no drive físico, com latência aceitável (limite a definir) e identificação estável da unidade escolhida pelo usuário. Também fica documentado como a ISO montada se comporta (mesma unidade ou unidade nova).
 - **Falha:** nenhum evento confiável. Nesse caso, polling com o intervalo medido vira o padrão, e `media_events = no`.
-- **Resultado parcial (2026-09-28):** só a triagem por ISO foi feita. Montar uma ISO cria uma unidade virtual nova (`Microsoft Virtual DVD-ROM`) e `Win32_CDROMDrive.MediaLoaded`/`VolumeName` refletem a mídia; o polling funciona. **Falta:** eventos `WM_DEVICECHANGE`, latência medida e o comportamento do drive USB físico (exige hardware).
+- **Resultado parcial (2026-09-28):** triagem por ISO feita ([spikes/w2-devicechange](../spikes/w2-devicechange/README.md)). Montar uma ISO cria uma unidade virtual nova (`Microsoft Virtual DVD-ROM`). O `WM_DEVICECHANGE` traz `DEVICEARRIVAL`/`REMOVECOMPLETE` de volume com **`flags = 0` (sem `DBTF_MEDIA`)**, precedidos de `DEVNODES_CHANGED`, com ~1,2 s de latência; `Win32_CDROMDrive.MediaLoaded`/`VolumeName` refletem a mídia e o polling funciona. **Decisão de desenho:** tratar os eventos como gatilho para reler o estado, sem depender da flag. **Falta (exige hardware):** eventos e latência do drive USB físico.
 
 ### W3. Classificação da mídia
 
