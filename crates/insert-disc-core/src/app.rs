@@ -268,6 +268,22 @@ impl<D: DriveBackend, L: Launcher> App<D, L> {
         self.last_media.as_ref()
     }
 
+    /// Exporta a estante (JSON, sem segredos).
+    pub fn export_catalog(&self) -> String {
+        self.catalog.to_json()
+    }
+
+    /// Importar estante (Q19, opção a): substitui a atual. Só nas configurações.
+    pub fn import_catalog(&mut self, json: &str) -> Result<(), LoadError> {
+        if self.state != State::Settings {
+            return Err(LoadError::Corrupt("fora das configurações".into()));
+        }
+        self.catalog = Catalog::from_json(json)?;
+        self.persist();
+        self.select_drive();
+        Ok(())
+    }
+
     // ---------- drive ----------
 
     fn select_drive(&mut self) {

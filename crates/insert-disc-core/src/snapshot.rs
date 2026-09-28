@@ -22,6 +22,14 @@ pub struct GameView {
 }
 
 #[derive(Debug, Clone, Serialize)]
+pub struct DiscView {
+    pub disc_id: DiscId,
+    pub label: String,
+    pub created_at: u64,
+    pub origin: &'static str,
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct MediaView {
     pub label: Option<String>,
     pub physical: &'static str,
@@ -55,8 +63,14 @@ pub struct Snapshot {
     pub state: &'static str,
     pub game: Option<GameView>,
     pub other_game: Option<GameView>,
+    /// Discos do jogo em contexto (tela de opções).
+    pub game_discs: Vec<DiscView>,
     pub media: Option<MediaView>,
     pub reason: Option<String>,
+    /// Rótulo em edição/gravação (REG_LABEL_PREVIEW e seguintes).
+    pub label: Option<String>,
+    /// Passo da confirmação de apagar (1 ou 2).
+    pub step: Option<u8>,
     pub actions: Vec<ActionView>,
     pub progress: Option<u8>,
     pub timing: Option<Timing>,
@@ -213,8 +227,21 @@ impl<D: DriveBackend, L: Launcher> App<D, L> {
             state: state.name(),
             game: game_id.and_then(|g| self.catalog.game(g)).map(view),
             other_game: other.and_then(|g| self.catalog.game(g)).map(view),
+            game_discs: game_id
+                .and_then(|g| self.catalog.game(g))
+                .map(|g| g.discs.iter().map(|d| DiscView { disc_id: d.disc_id, label: d.label.clone(), created_at: d.created_at, origin: match d.origin { DiscOrigin::Burned => "burned", DiscOrigin::Adopted => "adopted" } }).collect())
+                .unwrap_or_default(),
             media,
             reason: reason(&state),
+            label: match &state {
+                State::RegLabelPreview { label, .. } | State::RegCdrWarning { label, .. } | State::Burning { label, .. } => Some(label.clone()),
+                State::BurnFailed { label, .. } | State::Erasing { label, .. } => label.clone(),
+                _ => None,
+            },
+            step: match &state {
+                State::RegEraseConfirm { step, .. } => Some(*step),
+                _ => None,
+            },
             actions,
             progress: self.progress.filter(|_| matches!(state, State::Burning { .. } | State::Verifying { .. } | State::BurnDone { .. } | State::Erasing { .. })),
             timing,

@@ -59,6 +59,11 @@ fn handle(host: &Arc<Mutex<Host>>, mut req: Request) {
             Ok(v) => json_response(v, 200),
             Err(e) => json_response(json!({ "error": e }), 400),
         },
+        (Method::Get, "/api/export") => Response::from_string(host.lock().unwrap().export_json()).with_header(Header::from_bytes("Content-Type", "application/json").unwrap()),
+        (Method::Post, "/api/import") => match host.lock().unwrap().import_json(&body) {
+            Ok(()) => json_response(json!({ "ok": true }), 200),
+            Err(e) => json_response(json!({ "error": e }), 400),
+        },
         (Method::Get, "/api/dev") => json_response(host.lock().unwrap().dev_state(), 200),
         (Method::Post, "/api/dev") => match host.lock().unwrap().dev(&parsed) {
             Ok(v) => json_response(v, 200),

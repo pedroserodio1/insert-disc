@@ -1,0 +1,176 @@
+// Textos visíveis (FRONTEND-DESIGN §9): [pt-BR, en]. O núcleo só envia códigos.
+
+const L = {
+  // ações
+  'action.play': ['Jogar', 'Play'],
+  'action.play_other': ['Jogar {other}', 'Play {other}'],
+  'action.back': ['Voltar', 'Back'],
+  'action.back_to_shelf': ['Voltar à estante', 'Back to shelf'],
+  'action.select': ['Selecionar', 'Select'],
+  'action.add_game': ['Adicionar jogo', 'Add game'],
+  'action.options': ['Opções', 'Options'],
+  'action.settings': ['Configurações', 'Settings'],
+  'action.try_other': ['Tentar outro disco', 'Try another disc'],
+  'action.adopt': ['Adotar este disco', 'Adopt this disc'],
+  'action.burn': ['Gravar disco', 'Burn disc'],
+  'action.erase': ['Apagar', 'Erase'],
+  'action.erase_retry': ['Apagar e tentar de novo', 'Erase and try again'],
+  'action.retry_tray': ['Abrir a gaveta', 'Open the tray'],
+  'action.continue': ['Continuar', 'Continue'],
+  'action.done': ['Concluir', 'Done'],
+  'action.choose_drive': ['Escolher drive', 'Choose drive'],
+  'action.confirm': ['Confirmar', 'Confirm'],
+  'action.cancel': ['Cancelar', 'Cancel'],
+  'action.save': ['Salvar', 'Save'],
+  // biblioteca e avisos
+  'library.empty.title': ['Sua estante está vazia', 'Your shelf is empty'],
+  'library.empty.body': ['Adicione um jogo e grave o disco dele.', 'Add a game and burn its disc.'],
+  'library.kind.steam': ['Steam', 'Steam'],
+  'library.kind.custom': ['Personalizado', 'Custom'],
+  'library.disc_count': ['{n} disco|{n} discos', '{n} disc|{n} discs'],
+  'library.no_discs': ['Sem disco', 'No disc'],
+  'toast.focus': ['{other} está na gaveta.', '{other} is in the tray.'],
+  'toast.unknown': ['Disco desconhecido na gaveta. Selecione um jogo para associá-lo.', 'Unknown disc in the tray. Select a game to link it.'],
+  'toast.not_a_game': ['O disco na gaveta não é um disco de jogo.', "The disc in the tray isn't a game disc."],
+  'toast.read_error': ['Não deu para ler o disco na gaveta.', "Couldn't read the disc in the tray."],
+  'toast.drive_removed': ['O drive foi desconectado.', 'The drive was disconnected.'],
+  // fluxo do disco
+  'nodisc.title': ['{game} ainda não tem disco', "{game} doesn't have a disc yet"],
+  'nodisc.body': ['Grave um disco para jogar por aqui.', 'Burn a disc to play it from here.'],
+  'wait.title': ['Coloque o disco de {game} na gaveta', 'Put the {game} disc in the tray'],
+  'wait.tray_opening': ['A gaveta está abrindo.', 'The tray is opening.'],
+  'wait.tray_manual': ['Abra a gaveta do drive e feche depois de colocar o disco.', 'Open the drive tray, then close it after inserting the disc.'],
+  'wait.tray_failed': ['A gaveta não abriu. Abra pelo botão do drive.', "The tray didn't open. Use the button on the drive."],
+  'reading.title': ['Lendo o disco', 'Reading the disc'],
+  'reject.OTHER_GAME': ['Este disco é de {other}.', 'This disc is for {other}.'],
+  'reject.UNKNOWN': ['Este disco não está na sua estante.', "This disc isn't on your shelf."],
+  'reject.LEGACY_GAME_INI': ['Este disco é do Reset Floppy Game System. Grave um disco novo para {game}.', 'This disc is from Reset Floppy Game System. Burn a new disc for {game}.'],
+  'reject.NO_GAME_INI': ['Este CD não é um disco de jogo.', "This CD isn't a game disc."],
+  'reject.INVALID_GAME_INI': ['O identificador deste disco está danificado.', "This disc's ID is damaged."],
+  'reject.BLANK': ['Este disco está vazio.', 'This disc is blank.'],
+  'reject.AUDIO': ['Este é um CD de música.', 'This is a music CD.'],
+  'reject.READ_ERROR': ['Não deu para ler o disco. Limpe a face e tente de novo.', "Couldn't read the disc. Wipe it and try again."],
+  'adopt.title': ['Associar este disco a {game}?', 'Link this disc to {game}?'],
+  'adopt.body': ['O disco diz ser {name}. Depois disso, ele abre {game}.', "The disc says it's {name}. After this, it opens {game}."],
+  'adopt.confirm': ['Associar disco', 'Link disc'],
+  'launch.title': ['Abrindo {game}', 'Opening {game}'],
+  'launch.error.not_found': ['O programa de {game} não foi encontrado. Confira o caminho nas opções do jogo.', "{game}'s program wasn't found. Check the path in the game's options."],
+  'launch.error.steam_missing': ['A Steam não foi encontrada neste PC.', "Steam wasn't found on this PC."],
+  'launch.error.elevation_denied': ['{game} precisa de permissão de administrador, e ela foi negada.', '{game} needs administrator permission, and it was denied.'],
+  'launch.error.generic': ['{game} não abriu.', "{game} didn't open."],
+  // ficha
+  'sheet.label': ['Rótulo', 'Label'],
+  'sheet.media': ['Mídia', 'Media'],
+  'sheet.id': ['Identificador', 'ID'],
+  'sheet.ini_name': ['Nome no disco', 'Name on disc'],
+  'sheet.belongs_to': ['Pertence a', 'Belongs to'],
+  'common.not_informed': ['não informado', 'not available'],
+  'media.cd-rom': ['CD-ROM', 'CD-ROM'],
+  'media.cd-r': ['CD-R', 'CD-R'],
+  'media.cd-rw': ['CD-RW', 'CD-RW'],
+  'media.unknown': ['desconhecida', 'unknown'],
+  // cadastro e gravação
+  'reg.insert': ['Coloque um CD-R ou CD-RW virgem', 'Insert a blank CD-R or CD-RW'],
+  'reg.case_label': ['Novo disco', 'New disc'],
+  'reg.reading': ['Verificando o disco', 'Checking the disc'],
+  'reg.choose': ['Para qual jogo é o disco?', 'Which game is the disc for?'],
+  'reg.new_steam': ['Novo jogo da Steam', 'New Steam game'],
+  'reg.new_custom': ['Novo jogo personalizado', 'New custom game'],
+  'reg.label.title': ['Rótulo do disco', 'Disc label'],
+  'reg.label.body': ['É o nome que aparece no Windows. Não muda qual jogo o disco abre.', "It's the name Windows shows. It doesn't change which game the disc opens."],
+  'reg.cdr_warning.title': ['CD-R só pode ser gravado uma vez', 'A CD-R can only be burned once'],
+  'reg.cdr_warning.body': ['Se a gravação falhar, este disco não poderá ser usado.', "If burning fails, this disc can't be used."],
+  'reg.reject.CDR_USED': ['Este CD-R já foi gravado. Use um disco virgem.', 'This CD-R has already been burned. Use a blank disc.'],
+  'reg.reject.NOT_WRITABLE': ['Este disco não pode ser gravado.', "This disc can't be burned."],
+  'reg.reject.AUDIO': ['Este é um CD de música. Use um disco virgem.', 'This is a music CD. Use a blank disc.'],
+  'reg.reject.READ_ERROR': ['Não deu para ler o disco.', "Couldn't read the disc."],
+  'erase.title': ['Apagar este CD-RW?', 'Erase this CD-RW?'],
+  'erase.body': ['Tudo o que está nele será apagado.', 'Everything on it will be erased.'],
+  'erase.hold': ['Segure para apagar', 'Hold to erase'],
+  'erase.progress': ['Apagando. Não remova o disco.', "Erasing. Don't remove the disc."],
+  'burn.progress': ['Gravando. Não remova o disco.', "Burning. Don't remove the disc."],
+  'burn.verifying': ['Verificando a gravação', 'Verifying the burn'],
+  'burn.done.title': ['Disco gravado', 'Disc burned'],
+  'burn.done.body': ['Agora imprima e cole a etiqueta.', 'Now print and stick on the label.'],
+  'burn.failed.write_error': ['A gravação falhou.', 'Burning failed.'],
+  'burn.failed.verify_mismatch': ['O disco gravado não confere com o original.', "The burned disc doesn't match."],
+  'burn.failed.drive_removed': ['O drive foi desconectado durante a gravação.', 'The drive was disconnected while burning.'],
+  'burn.failed.cdr_lost': ['Este CD-R não poderá ser usado.', "This CD-R can't be used."],
+  'burn.failed.erase_error': ['Não deu para apagar o disco.', "Couldn't erase the disc."],
+  // gestão, drive e catálogo
+  'options.edit': ['Editar jogo', 'Edit game'],
+  'options.discs': ['Discos', 'Discs'],
+  'options.burn_another': ['Gravar outro disco', 'Burn another disc'],
+  'options.remove': ['Remover jogo', 'Remove game'],
+  'options.unlink_disc': ['Desassociar disco', 'Unlink disc'],
+  'options.no_discs': ['Nenhum disco associado.', 'No linked discs.'],
+  'disc.origin.burned': ['Gravado aqui', 'Burned here'],
+  'disc.origin.adopted': ['Adotado', 'Adopted'],
+  'remove.title': ['Remover {game} da estante?', 'Remove {game} from the shelf?'],
+  'remove.body': ['Os discos dele passam a ser desconhecidos. Dá para adotá-los de novo depois.', 'Its discs become unknown. You can adopt them again later.'],
+  'remove.confirm': ['Remover jogo', 'Remove game'],
+  'drive.none.title': ['Nenhum drive encontrado', 'No drive found'],
+  'drive.none.body': ['Conecte o drive de CD e escolha-o nas configurações.', 'Connect the CD drive and choose it in settings.'],
+  'drive.removed.title': ['O drive foi desconectado', 'The drive was disconnected'],
+  'drive.removed.body': ['Conecte o drive de novo para continuar.', 'Reconnect the drive to continue.'],
+  'drive.cannot_burn.title': ['Este drive não grava CDs', "This drive can't burn CDs"],
+  'drive.cannot_burn.body': ['Use um drive gravador para cadastrar jogos.', 'Use a burner drive to add games.'],
+  'catalog.error.title': ['Não deu para abrir sua estante', "Couldn't open your shelf"],
+  'catalog.error.body': ['O arquivo foi preservado. Restaure um backup ou comece uma estante vazia.', 'The file was kept. Restore a backup or start an empty shelf.'],
+  'catalog.start_empty': ['Começar vazia', 'Start empty'],
+  'catalog.restore': ['Restaurar o backup {n}', 'Restore backup {n}'],
+  // configurações
+  'settings.title': ['Configurações', 'Settings'],
+  'settings.drive': ['Drive', 'Drive'],
+  'settings.on_insert': ['Ao colocar um disco', 'When a disc is inserted'],
+  'settings.on_insert.focus': ['Mostrar o jogo', 'Show the game'],
+  'settings.on_insert.launch': ['Abrir o jogo', 'Open the game'],
+  'settings.loading_min': ['Duração mínima da abertura', 'Minimum opening time'],
+  'settings.language': ['Idioma', 'Language'],
+  'settings.language.system': ['Sistema', 'System'],
+  'settings.fullscreen': ['Tela cheia', 'Fullscreen'],
+  'settings.online_covers': ['Capas da internet', 'Covers from the internet'],
+  'settings.export': ['Exportar estante', 'Export shelf'],
+  'settings.import': ['Importar estante', 'Import shelf'],
+  'settings.seconds': ['{n} s', '{n} s'],
+  'common.on': ['Ligado', 'On'],
+  'common.off': ['Desligado', 'Off'],
+  'common.none': ['Nenhum', 'None'],
+  // formulários
+  'form.steam.title': ['Novo jogo da Steam', 'New Steam game'],
+  'form.custom.title': ['Novo jogo personalizado', 'New custom game'],
+  'form.edit.title': ['Editar jogo', 'Edit game'],
+  'form.name': ['Nome', 'Name'],
+  'form.app_id': ['AppID da Steam', 'Steam AppID'],
+  'form.executable': ['Programa (caminho completo)', 'Program (full path)'],
+  'form.args': ['Argumentos (um por linha)', 'Arguments (one per line)'],
+  'form.workdir': ['Pasta de trabalho (opcional)', 'Working folder (optional)'],
+  'form.error.app_id': ['O AppID precisa ser um número maior que zero.', 'The AppID must be a number greater than zero.'],
+  'form.error.name': ['Dê um nome ao jogo.', 'Give the game a name.'],
+  'form.error.invalid': ['Não deu para salvar: {reason}.', "Couldn't save: {reason}."],
+  // geral
+  'boot.loading': ['Carregando', 'Loading'],
+  'error.connection': ['Sem conexão com o núcleo do app.', 'No connection to the app core.'],
+};
+
+let locale = 'pt-BR';
+
+export function setLocale(l) {
+  locale = l === 'en' ? 'en' : l === 'pt-BR' ? 'pt-BR' : (navigator.language || '').toLowerCase().startsWith('pt') ? 'pt-BR' : 'en';
+  document.documentElement.lang = locale;
+}
+
+export function getLocale() { return locale; }
+
+export function t(key, params = {}) {
+  const entry = L[key];
+  if (!entry) return key;
+  let text = entry[locale === 'en' ? 1 : 0];
+  if (text.includes('|')) {
+    const [one, other] = text.split('|');
+    text = new Intl.PluralRules(locale).select(Number(params.n)) === 'one' ? one : other;
+  }
+  return text.replace(/\{(\w+)\}/g, (_, k) => (params[k] ?? ''));
+}
+
+export const hasKey = (key) => key in L;

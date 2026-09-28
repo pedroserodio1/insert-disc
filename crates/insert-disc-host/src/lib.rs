@@ -161,6 +161,14 @@ impl Host {
         })
     }
 
+    pub fn export_json(&self) -> String {
+        self.app.export_catalog()
+    }
+
+    pub fn import_json(&mut self, text: &str) -> Result<(), String> {
+        self.app.import_catalog(text).map_err(|_| "estante inválida ou fora das configurações".to_string())
+    }
+
     /// Estado do drive falso e do lançador, para o painel de desenvolvimento.
     pub fn dev_state(&mut self) -> Value {
         let caps = self.app.drive_mut().capabilities_now();
