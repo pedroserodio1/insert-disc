@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Spike W1: gamepad</title>
+  <style>
+    :root { --azo: #14264A; --azo-fundo: #0E1D3A; --etiqueta: #F3F5F4; --policarbonato: #C4CAD3;
+            --ftalocianina: #D8B64C; --cianina: #3FB8AF; --laser: #F2645F; }
+    body { margin: 0; background: var(--azo); color: var(--etiqueta); font: 16px/1.4 system-ui, sans-serif; }
+    header { padding: 16px 24px; }
+    h1 { margin: 0 0 8px; font-size: 24px; }
+    #status { color: var(--policarbonato); }
+    #status b { color: var(--ftalocianina); font-weight: 600; }
+    main { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 0 24px 24px; height: calc(100vh - 150px); }
+    section { background: var(--azo-fundo); padding: 12px 16px; overflow: auto; }
+    h2 { margin: 0 0 8px; font-size: 18px; }
+    ol { margin: 0; padding: 0; list-style: none; font-variant-numeric: tabular-nums; }
+    li { padding: 2px 0; }
+    .t { color: var(--policarbonato); display: inline-block; width: 90px; }
+    .down { color: var(--ftalocianina); }
+    .axis { color: var(--cianina); }
+    .error, .unfocused { color: var(--laser); }
+    #delta { color: var(--cianina); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Spike W1: Gamepad API (WebView2) × gilrs</h1>
+    <div id="status"></div>
+    <div id="delta">Aperte um botão para comparar a latência entre as duas fontes.</div>
+    <div>F11: tela cheia · C: limpar · Teste também com Alt+Tab e com outra janela por cima.</div>
+  </header>
+  <main>
+    <section><h2>Gamepad API</h2><ol id="web"></ol></section>
+    <section><h2>gilrs (Rust)</h2><ol id="rust"></ol></section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

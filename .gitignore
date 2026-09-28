@@ -9,3 +9,6 @@ Thumbs.db
 desktop.ini
 .vscode/
 .idea/
+
+# Tauri (gerado pelo build)
+gen/
