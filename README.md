@@ -8,10 +8,28 @@ Inspirado no [Reset Floppy Game System](https://resethub.com.br/2026/09/13/como-
 
 | Item | Estado |
 |---|---|
-| Fase | **0: documentação.** Ainda não há código. |
+| Fase | **1 (em andamento):** núcleo em Rust, drive falso com ISO e interface funcionando de ponta a ponta no navegador. **Ainda não há** drive real, gravação real, app Tauri empacotado nem leitura de controle validada. Veja o [ROADMAP](docs/ROADMAP.md). |
 | Plataforma alvo | Windows (fase 1). Linux numa fase posterior, ainda a confirmar. |
 | Licença | MIT OR Apache-2.0, à sua escolha ([LICENSE-MIT](LICENSE-MIT), [LICENSE-APACHE](LICENSE-APACHE), [ADR-0017](docs/adr/0017-licenca-mit-apache.md)) |
 | Nome | Insert Disc ([ADR-0020](docs/adr/0020-nome-insert-disc.md)) |
+
+## Como rodar
+
+Precisa de Rust (toolchain estável). A interface roda no navegador contra o núcleo real, com o **drive falso** (sem hardware):
+
+```bash
+cargo run -p insert-disc-host
+```
+
+Abra <http://127.0.0.1:5173/> (com `?dev=1` aparece o painel que simula discos, falhas e o drive). Teclado: setas, Enter, Esc, `N` (adicionar jogo), `O` (opções), `M` (configurações). Um controle também funciona (Gamepad API).
+
+```bash
+cargo test                     # núcleo e API (57 + testes da camada host)
+cargo clippy --all-targets -- -D warnings
+node scripts/check-docs.js     # links e âncoras da documentação
+```
+
+O lançador do modo de desenvolvimento **só registra** o que executaria; nenhum jogo é aberto.
 
 ## Como navegar
 

@@ -104,11 +104,13 @@ A fase 1 observa uma única unidade (escolhida nas configurações).
 
 ## Q17. Framework do frontend
 
+**Resolvida:** JavaScript e CSS puros, sem framework nem build ([ADR-0021](adr/0021-frontend-js-css-sem-framework.md)). Análise original mantida como histórico.
+
 O design ([FRONTEND-DESIGN](FRONTEND-DESIGN.md)) exige componentes próprios, sem kit pronto.
 
 - **Opções:** TypeScript puro; Svelte; Solid; React.
 - **Critérios:** tamanho do bundle, facilidade de gerenciar foco por controle, estado derivado da máquina de estados do backend (a UI só renderiza).
-- **Recomendação:** Svelte ou TypeScript puro, por serem leves e porque a UI é uma projeção do estado vindo do Rust. Decidir no início da fase 1d.
+- **Recomendação da época:** Svelte ou TypeScript puro, por serem leves e porque a UI é uma projeção do estado vindo do Rust.
 
 ## Q18. Entrada de texto com controle
 
