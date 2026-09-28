@@ -1,0 +1,16 @@
+[package]
+name = "insert-disc-core"
+version = "0.0.0"
+description = "Núcleo portátil do Insert Disc: catálogo, GAME.INI, máquina de estados, política de lançamento e drive falso. Sem APIs de SO."
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["v4", "serde"] }
+
+[dev-dependencies]
+tempfile = "3"
