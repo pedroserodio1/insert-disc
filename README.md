@@ -31,6 +31,14 @@ node scripts/check-docs.js     # links e âncoras da documentação
 
 O lançador do modo de desenvolvimento **só registra** o que executaria; nenhum jogo é aberto.
 
+### App desktop (Tauri) e teste do controle
+
+```bash
+cd apps/desktop && cargo run
+```
+
+Abre a mesma UI numa janela do WebView2 (com o drive falso; `Ctrl+Shift+D` mostra o painel de simulação). É o jeito de **testar o controle de verdade** (spike [W1](docs/RISKS-AND-SPIKES.md#w1-gamepad-no-webview2)): conecte um controle, clique na janela e navegue. Se a Gamepad API não entregar os botões nessa janela, o plano B é ler o controle no Rust com o `gilrs` ([spikes/w1-gamepad](spikes/w1-gamepad/README.md) compara as duas fontes lado a lado).
+
 ## Como navegar
 
 Convenção usada em todos os documentos:
