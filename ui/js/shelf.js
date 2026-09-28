@@ -43,7 +43,7 @@ export function createShelf({ games, focus = 0, onFocus, onAccept }) {
     slots.length = 0;
     track.replaceChildren();
     gs.forEach((g, i) => {
-      const s = h('div', { class: 'slot', style: `--i:${i}`, dataset: { id: g.game_id } }, spineEl(g));
+      const s = h('div', { class: 'slot', dataset: { id: g.game_id } }, spineEl(g));
       // só movimento real do mouse move o foco: as lombadas mudam de lugar sob um cursor parado
       s.addEventListener('mousemove', (e) => {
         if (!e.movementX && !e.movementY) return;
@@ -80,6 +80,21 @@ export function createShelf({ games, focus = 0, onFocus, onAccept }) {
     c.classList.add('pulled');
   }
 
+  // A trilha é posicionada por um transform inline (sem variável CSS herdada) e só as lombadas
+  // que trocam de lado do foco mudam de classe: o custo por movimento não cresce com a estante.
+  function placeTrack(i) {
+    track.style.transform = `translateX(calc(28vw - ${i} * var(--lombada-largura)))`;
+  }
+  function placeAll(i) {
+    slots.forEach((s, k) => s.classList.toggle('after', k > i));
+    placeTrack(i);
+  }
+  function place(from, to) {
+    if (from < 0 || from >= slots.length) return placeAll(to);
+    for (let k = Math.min(from, to) + 1; k <= Math.max(from, to); k++) slots[k]?.classList.toggle('after', k > to);
+    placeTrack(to);
+  }
+
   let lastMove = 0;
   function setFocus(i, { fast = false } = {}) {
     if (!list.length) return;
@@ -94,7 +109,7 @@ export function createShelf({ games, focus = 0, onFocus, onAccept }) {
     if (i !== prev) leave(slots[prev], fast);
     idx = i;
     track.classList.toggle('instant', fast);
-    track.style.setProperty('--f', String(i));
+    place(prev, i);
     if (fast) {
       slots[i].classList.add('pending');
       pullTimer = setTimeout(() => pull(i), FAST_SETTLE_MS);
@@ -108,14 +123,15 @@ export function createShelf({ games, focus = 0, onFocus, onAccept }) {
     const prev = Math.max(0, idx);
     build(gs);
     idx = -1;
+    placeAll(Math.max(0, at >= 0 ? at : Math.min(prev, gs.length - 1)));
     track.classList.add('instant');
     setFocus(at >= 0 ? at : Math.min(prev, gs.length - 1), { fast: false });
     track.classList.remove('instant');
   }
 
   build(games);
-  track.style.setProperty('--f', String(focus));
   idx = Math.max(0, Math.min(list.length - 1, focus));
+  placeAll(idx);
   requestAnimationFrame(() => { track.classList.remove('instant'); if (list.length) { idx = -1; setFocus(focus); } });
 
   return {

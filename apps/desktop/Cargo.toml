@@ -1,0 +1,20 @@
+[package]
+name = "insert-disc"
+version = "0.0.0"
+description = "Insert Disc: lançador de jogos por mídia física (app desktop, Tauri)"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+authors = ["Pedro Serôdio"]
+publish = false
+
+# Fora do workspace principal: o build do Tauri exige dependências de sistema (WebView2 no
+# Windows; WebKitGTK no Linux) que o CI do núcleo não precisa instalar.
+[workspace]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+insert-disc-host = { path = "../../crates/insert-disc-host" }
+serde_json = "1"

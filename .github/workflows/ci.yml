@@ -22,12 +22,15 @@ jobs:
         with:
           components: clippy
       - uses: Swatinem/rust-cache@v2
-      - run: cargo clippy -p insert-disc-core --all-targets -- -D warnings
-      - run: cargo test -p insert-disc-core
+      # o app desktop (Tauri) fica fora do workspace e não entra aqui
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace
 
-  docs:
+  docs-e-ui:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Links relativos e âncoras
         run: node scripts/check-docs.js
+      - name: Sintaxe dos módulos da UI
+        run: for f in ui/js/*.js; do node --check "$f"; done

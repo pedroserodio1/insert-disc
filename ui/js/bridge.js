@@ -13,6 +13,8 @@ export const bridge = {
   kind: tauri ? 'tauri' : 'http',
   snapshot: () => (tauri ? tauri.invoke('snapshot').then(JSON.parse) : http('GET', '/api/snapshot')),
   intent: (intent) => (tauri ? tauri.invoke('intent', { intent }) : http('POST', '/api/intent', intent)),
-  devState: () => http('GET', '/api/dev'),
-  dev: (cmd) => http('POST', '/api/dev', cmd),
+  devState: () => (tauri ? tauri.invoke('dev_state') : http('GET', '/api/dev')),
+  dev: (cmd) => (tauri ? tauri.invoke('dev', { cmd }) : http('POST', '/api/dev', cmd)),
+  exportCatalog: () => (tauri ? tauri.invoke('export_catalog') : fetch('/api/export').then((r) => r.text())),
+  importCatalog: (json) => (tauri ? tauri.invoke('import_catalog', { json }) : fetch('/api/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: json })),
 };

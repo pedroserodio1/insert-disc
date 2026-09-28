@@ -49,12 +49,12 @@ h1, h2, p, dl, dd, ul { margin: 0; padding: 0; }
 .shelf { position: absolute; left: 0; right: 0; top: 30vh; height: calc(var(--caixa-altura) + var(--u) * 3); }
 .shelf::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: calc(var(--caixa-altura) + var(--u) * 2); background: var(--azo-fundo); }
 .floor { position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--s) * 3); background: rgb(196 202 211 / var(--opac-aresta)); }
-.track { position: absolute; left: 0; bottom: calc(var(--s) * 3); display: flex; height: var(--caixa-altura); transform: translateX(calc(28vw - var(--f, 0) * var(--lombada-largura))); transition: transform var(--dur-mover-foco) ease-out; }
+.track { position: absolute; left: 0; bottom: calc(var(--s) * 3); display: flex; height: var(--caixa-altura); transform: translateX(28vw); transition: transform var(--dur-mover-foco) ease-out; }
 .track.instant, .track.instant .slot { transition: none; }
 .slot { flex: 0 0 var(--lombada-largura); width: var(--lombada-largura); height: var(--caixa-altura); position: relative;
-  /* vizinhas depois do foco se afastam para abrir a frente da caixa (500 px) */
-  transform: translateX(calc(clamp(0, calc((var(--i) - var(--f)) * 1000), 1) * var(--s) * 500));
   transition: transform var(--dur-mover-foco) ease-out; }
+/* vizinhas depois do foco se afastam para abrir a frente da caixa (500 px); só quem troca de lado muda de classe */
+.slot.after { transform: translateX(calc(var(--s) * 500)); }
 .spine { position: absolute; inset: 0; background: var(--spine, var(--policarbonato)); color: var(--etiqueta); border-left: var(--borda-caixa) solid rgb(196 202 211 / var(--opac-aresta)); overflow: hidden; padding: calc(var(--u) * 2) 0 0; display: flex; justify-content: center; }
 .spine .name { writing-mode: vertical-rl; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-height: calc(var(--caixa-altura) - var(--u) * 6); }
 .spine.no-cover { --spine: var(--policarbonato); color: var(--azo); }

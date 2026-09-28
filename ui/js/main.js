@@ -45,8 +45,7 @@ const ctx = {
     else if (document.fullscreenElement) document.exitFullscreen?.();
   },
   async exportCatalog() {
-    const res = await fetch('/api/export');
-    const url = URL.createObjectURL(await res.blob());
+    const url = URL.createObjectURL(new Blob([await bridge.exportCatalog()], { type: 'application/json' }));
     const a = h('a', { href: url, download: 'insert-disc-estante.json' });
     document.body.append(a); a.click(); a.remove(); URL.revokeObjectURL(url);
   },
@@ -55,7 +54,7 @@ const ctx = {
     input.addEventListener('change', async () => {
       const text = await input.files?.[0]?.text();
       input.remove();
-      if (text) { await fetch('/api/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: text }); await refresh(); }
+      if (text) { await bridge.importCatalog(text); await refresh(); }
     });
     document.body.append(input); input.click();
   },
@@ -254,5 +253,12 @@ current = S.boot();
 app.replaceChildren(current.el);
 refresh();
 setInterval(refresh, POLL_MS);
-if (new URLSearchParams(location.search).has('dev')) import('./dev.js').then((m) => m.mountDevPanel());
+// Painel do drive falso: ?dev=1 ou Ctrl+Shift+D (no app desktop não há URL para editar).
+let devPanel = null;
+const toggleDev = () => {
+  if (devPanel) { devPanel.remove(); devPanel = null; return; }
+  import('./dev.js').then((m) => { devPanel = m.mountDevPanel(); });
+};
+if (new URLSearchParams(location.search).has('dev')) toggleDev();
+window.addEventListener('keydown', (e) => { if (e.ctrlKey && e.shiftKey && (e.key === 'D' || e.key === 'd')) { e.preventDefault(); toggleDev(); } });
 window.__insertDisc = { ui, get snap() { return snap; }, ctx, input };
