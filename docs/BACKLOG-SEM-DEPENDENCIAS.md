@@ -6,12 +6,16 @@ Posição em 2026-09-29. "Sem nada externo" = só código e este PC: **sem drive
 
 | Peça | Estado |
 |---|---|
-| Núcleo (`insert-disc-core`): `GAME.INI`, catálogo, ISO, drive falso, máquina de estados, snapshot | Feito, 59 testes |
-| `insert-disc-host` (API JSON, servidor de desenvolvimento) e UI (`ui/`) | Feito; fluxo de jogar e de cadastro verificados no navegador com o drive falso |
-| App desktop (`apps/desktop`) | Abre no WebView2 e o fluxo de jogar funciona pelo IPC (E6 feito). **A1 feito:** catálogo em `%APPDATA%InsertDisc`, `--demo` e `--fake-drive` (Q7). No CI (job `desktop`). Achado: sem drive não há como cadastrar jogo (o cadastro passa pela gravação) e as capas de demonstração só existem no servidor de desenvolvimento |
-| Spikes W2 (parcial), W6, W7, W12 | Rodados; W13 parcial |
+| Núcleo (`insert-disc-core`) | Feito: `GAME.INI`, catálogo, ISO, drive falso, máquina de estados com operações assíncronas do drive, snapshot |
+| `insert-disc-host` | Feito: API JSON, catálogo persistente, lançador real, Steam, capas, `WindowsDrive` de leitura, log, controle por `gilrs` (feature) |
+| UI (`ui/`) | Feito: estante, fluxos de jogar e cadastrar, edição, importação da Steam, capas, configurações com escolha de drive, mouse, simulador de controle |
+| App desktop (`apps/desktop`) | Abre no WebView2; catálogo em `%APPDATA%\InsertDisc`; instância única; verificado ponta a ponta com uma ISO montada de verdade (`READING` → `MATCH` → `LAUNCHING`) |
+| Testes | 88 no Rust (`cargo test --workspace`), 6 da UI (`node --test ui/test/ui.test.js`), o teste da ISO montada (`--ignored`), contraste e links de documentação; tudo no CI |
+| Spikes | W2 (ISO), W6, W7, W8 (parcial), W12 e W13 rodados; W1, W2 físico, W3, W4, W5 e W9 dependem de hardware ou certificado |
 
-O app de hoje é uma **demonstração**: estante de exemplo recriada a cada abertura, drive falso e um lançador que só registra o que executaria.
+Sem o drive físico o app **não cadastra jogo de verdade** (o cadastro passa pela gravação, W5); é o principal bloqueio para o uso real.
+
+Como abrir cada modo: `cd apps/desktop && cargo run -- --demo` (estante de exemplo), `-- --fake-drive` (catálogo real com drive falso, padrão em depuração) ou `-- --real-drive` (drive do Windows, padrão em release).
 
 ## Fila (na ordem sugerida)
 
@@ -60,7 +64,7 @@ Legenda: **S** pequeno (horas), **M** médio, **G** grande.
 | E1 ✅ | **Testes da UI** (`node --test`, sem dependências): `i18n` (chaves presentes nos dois idiomas, plural), montagem de cada tela a partir de instantâneos de exemplo, validação de formulário | Rodam no CI | M |
 | E2 ✅ | **Script de contraste** dos tokens ([FRONTEND-DESIGN §3.1](FRONTEND-DESIGN.md#31-cor)) e checagem de que nenhum valor fora de token entrou no CSS | O CI falha se um par de cores ficar abaixo do mínimo | S |
 | E3 ✅ (navegação; ver W13) | **Re-medir o [W13](RISKS-AND-SPIKES.md#w13-desempenho-de-css-3d-no-webview2)** depois da correção da estante, com a janela do app visível | Números de quadros por segundo e tarefas longas registrados; ou o app desktop medido direto | S |
-| E4 | **Build local do instalador** (sem assinatura) e um workflow de release no CI que publica o artefato do Windows | O instalador instala e abre numa conta limpa; assinatura fica para o [W9](RISKS-AND-SPIKES.md#w9-empacotamento-assinatura-e-smartscreen) | M |
+| E4 ✅ (sem assinatura; instalar em máquina limpa pendente) | **Build local do instalador** (sem assinatura) e um workflow de release no CI que publica o artefato do Windows | O instalador instala e abre numa conta limpa; assinatura fica para o [W9](RISKS-AND-SPIKES.md#w9-empacotamento-assinatura-e-smartscreen) | M |
 | E5 ✅ | **Arquivos de projeto**: `CONTRIBUTING`, modelos de issue e de PR, política de segurança do GitHub | Presentes e linkados no README | S |
 | E6 ✅ | **Abrir e verificar o app desktop** (`apps/desktop`) no WebView2 | A janela sobe, a UI funciona, `Ctrl+Shift+D` mostra o painel; problemas achados viram itens aqui | S |
 
@@ -107,3 +111,7 @@ Perguntas abertas que dá para fechar com a recomendação da própria doc e seg
 - Só o **modo inglês** foi visto no navegador durante os testes (a UI segue o idioma do navegador); os textos em pt-BR existem, mas não foram revisados visualmente.
 - A UI não foi verificada em telas 4K nem em proporções diferentes de 16:9.
 - Ainda não existe teste automatizado da UI (item E1).
+
+## Instalador (E4)
+
+`cd apps/desktop && cargo tauri build --bundles nsis` (precisa do `tauri-cli`: `cargo install tauri-cli --version "^2" --locked`) gera `target/release/bundle/nsis/Insert Disc_<versão>_x64-setup.exe` (~2,4 MiB, sem assinatura). Verificado em 2026-09-29: instalação silenciosa numa pasta, o app instalado abre, e a desinstalação remove o executável. **Não verificado:** instalação numa máquina limpa e o aviso do SmartScreen ([W9](RISKS-AND-SPIKES.md#w9-empacotamento-assinatura-e-smartscreen)). O workflow `release.yml` roda ao criar uma tag `v*`, publica o instalador e o `SHA256SUMS.txt`.
