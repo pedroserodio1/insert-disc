@@ -12,6 +12,11 @@ use tauri::{Manager, State};
 type Shared = Arc<Mutex<Host>>;
 
 #[tauri::command]
+fn quit_app(app: tauri::AppHandle) {
+    app.exit(0);
+}
+
+#[tauri::command]
 fn snapshot(host: State<Shared>) -> String {
     host.lock().unwrap().snapshot_json()
 }
@@ -133,7 +138,7 @@ fn main() {
                 None => tauri::http::Response::builder().status(404).body(Vec::new()).unwrap(),
             }
         })
-        .invoke_handler(tauri::generate_handler![snapshot, intent, export_catalog, import_catalog, steam_games, set_cover, dev_state, dev])
+        .invoke_handler(tauri::generate_handler![snapshot, intent, export_catalog, import_catalog, steam_games, set_cover, quit_app, dev_state, dev])
         .run(tauri::generate_context!())
         .expect("falha ao iniciar o app");
 }

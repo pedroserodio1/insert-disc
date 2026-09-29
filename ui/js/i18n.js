@@ -37,6 +37,9 @@ const L = {
   'toast.cover_refused': ['Essa imagem não pôde ser usada como capa (use PNG, JPEG ou WebP de até 10 MB).', "That image can't be used as a cover (use a PNG, JPEG or WebP up to 10 MB)."],
   'settings.drive.auto': ['Automático', 'Automatic'],
   'settings.drive.missing': ['ausente', 'missing'],
+  'quit.title': ['Sair do Insert Disc?', 'Quit Insert Disc?'],
+  'quit.body': ['O app fecha e você volta para o Windows.', 'The app closes and you go back to Windows.'],
+  'quit.confirm': ['Sair', 'Quit'],
   'options.cover': ['Trocar capa…', 'Change cover…'],
   'toast.drive_removed': ['O drive foi desconectado.', 'The drive was disconnected.'],
   // fluxo do disco

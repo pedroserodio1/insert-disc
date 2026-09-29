@@ -125,7 +125,7 @@ export function library(snap, ctx) {
         { btn: 'menu', text: t('action.settings'), fn: () => ctx.send({ type: 'settings' }) },
       ]
       : [{ btn: 'accept', text: t('action.add_game'), primary: true, fn: () => ctx.send({ type: 'add_game' }) }, { btn: 'menu', text: t('action.settings'), fn: () => ctx.send({ type: 'settings' }) }],
-    back: null,
+    back: () => ctx.askQuit(),
     onNav(name, repeat) {
       if (name === 'left') return move(-1, repeat);
       if (name === 'right') return move(1, repeat);
@@ -265,6 +265,17 @@ export function adoptConfirm(snap, ctx) {
       { label: t('action.back'), kind: 'secondary', run: back(ctx) },
       { label: t('adopt.confirm'), run: act(ctx, 'confirm'), initial: true },
     ],
+  });
+}
+
+export function quitConfirm(snap, ctx) {
+  return dialogScreen(snap, ctx, {
+    title: t('quit.title'), body: t('quit.body'),
+    buttons: [
+      { label: t('action.cancel'), kind: 'secondary', run: () => ctx.cancelQuit(), initial: true },
+      { label: t('quit.confirm'), kind: 'danger', run: () => ctx.quit() },
+    ],
+    backFn: () => ctx.cancelQuit(),
   });
 }
 

@@ -43,6 +43,12 @@ const ctx = {
     ui.form = kind; onSnapshot(snap, true);
   },
   closeForm() { ui.form = null; onSnapshot(snap, true); },
+  askQuit() { ui.quit = true; onSnapshot(snap, true); },
+  cancelQuit() { ui.quit = false; onSnapshot(snap, true); },
+  quit() {
+    if (window.__TAURI__) window.__TAURI__.core.invoke('quit_app');
+    else window.close();
+  },
   stepAside() {
     const w = window.__TAURI__?.window?.getCurrentWindow?.();
     if (!w) return; // no navegador não há janela para minimizar
@@ -216,6 +222,8 @@ function flash(code, other = '') {
 
 // ---------- estado -> tela ----------
 function build(s) {
+  if (ui.quit && s.state === 'LIBRARY') return S.quitConfirm(s, ctx);
+  ui.quit = false;
   if (ui.form && ['REG_CHOOSE_GAME', 'GAME_OPTIONS'].includes(s.state)) return S.form(ui.form, s, ctx);
   ui.form = null;
   switch (s.state) {
@@ -248,7 +256,7 @@ function build(s) {
 }
 
 function signature(s) {
-  const base = [s.state, s.reason, s.game?.game_id, s.game?.name, s.other_game?.game_id, s.actions.map((a) => a.id + a.default).join(), s.media?.disc_id, s.media?.class, s.media?.label, s.step, s.label, localeKey, ui.form, s.drive];
+  const base = [s.state, s.reason, s.game?.game_id, s.game?.name, s.other_game?.game_id, s.actions.map((a) => a.id + a.default).join(), s.media?.disc_id, s.media?.class, s.media?.label, s.step, s.label, localeKey, ui.form, ui.quit, s.drive];
   if (s.state === 'SETTINGS') base.push(JSON.stringify(s.settings));
   if (s.state === 'GAME_OPTIONS') base.push(s.game_discs.map((d) => d.disc_id).join());
   if (s.state === 'REG_CHOOSE_GAME') base.push(s.library.map((g) => g.game_id + g.disc_count).join());

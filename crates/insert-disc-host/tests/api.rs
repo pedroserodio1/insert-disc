@@ -172,3 +172,16 @@ fn state_changes_are_logged_without_paths_by_default() {
     assert!(!text.contains("DEBUG"));
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn blank_disc_scenarios_work_in_real_mode_with_the_fake_drive() {
+    let dir = temp("blank");
+    let _ = std::fs::remove_dir_all(&dir);
+    let mut h = Host::open(&dir, DriveMode::Fake, false);
+    h.intent(&json!({ "type": "add_game" })).unwrap();
+    assert_eq!(snap(&mut h)["state"], "REG_INSERT");
+    h.dev(&json!({ "cmd": "insert", "what": "blank_cdrw" })).unwrap();
+    assert_eq!(snap(&mut h)["state"], "REG_CHOOSE_GAME");
+    assert!(h.dev(&json!({ "cmd": "insert", "what": "legacy" })).is_err()); // ISOs da demo só com --demo
+    let _ = std::fs::remove_dir_all(&dir);
+}

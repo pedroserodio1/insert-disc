@@ -341,7 +341,16 @@ impl Host {
                 if self.app.drive().fake().is_some_and(|d| d.has_media()) {
                     self.app.drive_mut().fake_mut().ok_or(NO_FAKE)?.remove_media();
                 }
-                self.demo.as_ref().ok_or("sem modo demonstração")?.insert(self.app.drive_mut().fake_mut().ok_or(NO_FAKE)?, &what)?;
+                let fake = self.app.drive_mut().fake_mut().ok_or(NO_FAKE)?;
+                // mídias que não dependem das ISOs da demonstração valem em qualquer modo com drive falso
+                match (what.as_str(), &self.demo) {
+                    ("blank_cdr", _) => fake.insert_blank_cdr(),
+                    ("blank_cdrw", _) => fake.insert_blank_cdrw(),
+                    ("audio", _) => fake.insert_audio(),
+                    ("unreadable", _) => fake.insert_unreadable(),
+                    (_, Some(demo)) => demo.insert(fake, &what)?,
+                    _ => return Err("esse cenário só existe no modo demonstração (--demo)".into()),
+                }
             }
             "remove" => self.app.drive_mut().fake_mut().ok_or(NO_FAKE)?.remove_media(),
             "op_delay" => self.app.drive_mut().fake_mut().ok_or(NO_FAKE)?.set_op_delay_ms(v["ms"].as_u64().unwrap_or(0).min(60_000)),
