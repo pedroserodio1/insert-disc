@@ -39,6 +39,12 @@ export function bar(hints) {
 
 /** Só aceita URL relativa do app ou asset local; nunca esquemas arbitrários. */
 export function safeUrl(u) {
+  // capa salva pelo app: `cover:<id>.jpg` -> protocolo `cover` do Tauri, ou /cover/ no servidor de desenvolvimento
+  if (typeof u === 'string' && /^cover:[0-9a-f-]+\.jpg$/i.test(u)) {
+    const n = u.slice(6);
+    if (!window.__TAURI__) return `/cover/${n}`;
+    return /Windows/i.test(navigator.userAgent) ? `http://cover.localhost/${n}` : `cover://localhost/${n}`;
+  }
   return typeof u === 'string' && /^(\/[^/]|asset:|https?:\/\/asset\.localhost\/)/.test(u) ? u.replace(/["\\\n\r]/g, '') : null;
 }
 

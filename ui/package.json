@@ -1,0 +1,6 @@
+{
+  "name": "insert-disc-ui",
+  "private": true,
+  "type": "module",
+  "description": "Só marca os módulos ES da UI para o Node (testes em ui/test); o app não usa npm."
+}

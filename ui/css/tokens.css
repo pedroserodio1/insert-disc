@@ -20,6 +20,7 @@
   --laser: #f2645f;
   --laser-escuro: #b3261e;
   --grafite: #5b6472;
+  --etiqueta-dialogo: #e6eae9; /* folha de diálogo sobre o véu */
 
   /* §3.2 escala: 1 px de token = altura da janela / 1080 */
   --s: calc(100vh / 1080);

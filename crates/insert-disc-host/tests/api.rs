@@ -120,3 +120,40 @@ fn slow_drive_is_visible_through_the_json_api_and_the_ui_keeps_responding() {
 fn uuid_zero() -> String {
     "00000000-0000-0000-0000-000000000000".into()
 }
+
+fn png_b64(w: u32, h: u32, px: [u8; 3]) -> String {
+    use base64::Engine;
+    let img: image::RgbImage = image::ImageBuffer::from_pixel(w, h, image::Rgb(px));
+    let mut out = std::io::Cursor::new(Vec::new());
+    img.write_to(&mut out, image::ImageFormat::Png).unwrap();
+    base64::engine::general_purpose::STANDARD.encode(out.into_inner())
+}
+
+#[test]
+fn cover_import_saves_a_clean_jpeg_sets_the_spine_and_replaces_the_old_file() {
+    use base64::Engine;
+    let mut h = Host::demo(std::env::temp_dir().join(format!("insert-disc-covers-{}", std::process::id())));
+    let s = snap(&mut h);
+    let celeste = s["library"].as_array().unwrap().iter().find(|g| g["name"] == "Celeste").unwrap()["game_id"].as_str().unwrap().to_string();
+
+    h.set_cover_json(&json!({ "game_id": celeste, "data": png_b64(800, 1200, [240, 240, 60]) })).unwrap();
+    let s = snap(&mut h);
+    let g = s["library"].as_array().unwrap().iter().find(|g| g["game_id"] == json!(celeste)).unwrap().clone();
+    let name = g["cover"].as_str().unwrap().strip_prefix("cover:").unwrap().to_string();
+    assert!(name.ends_with(".jpg"));
+    let spine = g["spine_color"].as_str().unwrap();
+    assert!(spine.starts_with('#') && spine.len() == 7);
+    let file = h.cover_file(&name).unwrap();
+    assert_eq!(&std::fs::read(&file).unwrap()[..2], &[0xFF, 0xD8]); // JPEG reencodado
+
+    h.set_cover_json(&json!({ "game_id": celeste, "data": png_b64(64, 96, [10, 10, 200]) })).unwrap();
+    assert!(!file.exists(), "capa antiga apagada");
+
+    // recusas: SVG, lixo, base64 inválido, jogo inexistente
+    let svg = base64::engine::general_purpose::STANDARD.encode("<svg xmlns='http://www.w3.org/2000/svg'/>");
+    for data in [svg, base64::engine::general_purpose::STANDARD.encode("lixo"), "@@@".into()] {
+        assert!(h.set_cover_json(&json!({ "game_id": celeste, "data": data })).is_err());
+    }
+    assert!(h.set_cover_json(&json!({ "game_id": uuid_zero(), "data": png_b64(8, 8, [1, 2, 3]) })).is_err());
+    assert!(h.cover_file("../catalog.json").is_none());
+}

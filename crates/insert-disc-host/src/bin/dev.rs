@@ -70,6 +70,14 @@ fn handle(host: &Arc<Mutex<Host>>, mut req: Request) {
             Ok(v) => json_response(v, 200),
             Err(e) => json_response(json!({ "error": e }), 400),
         },
+        (Method::Post, "/api/cover") => match host.lock().unwrap().set_cover_json(&parsed) {
+            Ok(v) => json_response(v, 200),
+            Err(e) => json_response(json!({ "error": e }), 400),
+        },
+        (Method::Get, p) if p.starts_with("/cover/") => match host.lock().unwrap().cover_file(p.trim_start_matches("/cover/")).and_then(|f| std::fs::read(f).ok()) {
+            Some(bytes) => Response::from_data(bytes).with_header(Header::from_bytes("Content-Type", "image/jpeg").unwrap()).with_header(Header::from_bytes("Cache-Control", "no-store").unwrap()),
+            None => Response::from_string("não encontrado").with_status_code(404),
+        },
         (Method::Get, p) if p.starts_with("/demo-cover/") => {
             let n = p.trim_start_matches("/demo-cover/").trim_end_matches(".svg").parse().unwrap_or(0);
             Response::from_string(demo_cover(n)).with_header(Header::from_bytes("Content-Type", "image/svg+xml").unwrap())

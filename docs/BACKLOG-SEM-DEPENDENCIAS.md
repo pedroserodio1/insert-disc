@@ -34,9 +34,9 @@ Legenda: **S** pequeno (horas), **M** médio, **G** grande.
 
 | # | Item | Pronto quando | Tam. |
 |---|---|---|---|
-| B1 | **Pipeline de capa local** ([SECURITY R6](SECURITY.md#r6-capas)): validar por conteúdo (não por extensão), limitar tamanho e dimensões, recusar SVG, reencodar, salvar nos dados do app | Arquivos falsos, gigantes e SVG são recusados em testes; a capa salva abre na UI pelo protocolo de assets do Tauri | M |
-| B2 | **Capa do cache da Steam** (54% dos jogos deste PC têm; o resto fica com placeholder) | Ao importar da Steam a capa é copiada pelo pipeline B1; sem capa, o placeholder aparece | S |
-| B3 | **Cor da lombada calculada no backend** (cor dominante escurecida até contraste ≥ 4,5:1 com `etiqueta`) | Teste com imagens claras e escuras; o campo `spine_color` é preenchido | S |
+| B1 ✅ | **Pipeline de capa local** ([SECURITY R6](SECURITY.md#r6-capas)): validar por conteúdo (não por extensão), limitar tamanho e dimensões, recusar SVG, reencodar, salvar nos dados do app | Arquivos falsos, gigantes e SVG são recusados em testes; a capa salva abre na UI pelo protocolo de assets do Tauri | M |
+| B2 ✅ | **Capa do cache da Steam** (54% dos jogos deste PC têm; o resto fica com placeholder) | Ao importar da Steam a capa é copiada pelo pipeline B1; sem capa, o placeholder aparece | S |
+| B3 ✅ | **Cor da lombada calculada no backend** (cor dominante escurecida até contraste ≥ 4,5:1 com `etiqueta`) | Teste com imagens claras e escuras; o campo `spine_color` é preenchido | S |
 
 ### C. Windows sem drive físico
 
@@ -57,8 +57,8 @@ Legenda: **S** pequeno (horas), **M** médio, **G** grande.
 
 | # | Item | Pronto quando | Tam. |
 |---|---|---|---|
-| E1 | **Testes da UI** (`node --test`, sem dependências): `i18n` (chaves presentes nos dois idiomas, plural), montagem de cada tela a partir de instantâneos de exemplo, validação de formulário | Rodam no CI | M |
-| E2 | **Script de contraste** dos tokens ([FRONTEND-DESIGN §3.1](FRONTEND-DESIGN.md#31-cor)) e checagem de que nenhum valor fora de token entrou no CSS | O CI falha se um par de cores ficar abaixo do mínimo | S |
+| E1 ✅ | **Testes da UI** (`node --test`, sem dependências): `i18n` (chaves presentes nos dois idiomas, plural), montagem de cada tela a partir de instantâneos de exemplo, validação de formulário | Rodam no CI | M |
+| E2 ✅ | **Script de contraste** dos tokens ([FRONTEND-DESIGN §3.1](FRONTEND-DESIGN.md#31-cor)) e checagem de que nenhum valor fora de token entrou no CSS | O CI falha se um par de cores ficar abaixo do mínimo | S |
 | E3 | **Re-medir o [W13](RISKS-AND-SPIKES.md#w13-desempenho-de-css-3d-no-webview2)** depois da correção da estante, com a janela do app visível | Números de quadros por segundo e tarefas longas registrados; ou o app desktop medido direto | S |
 | E4 | **Build local do instalador** (sem assinatura) e um workflow de release no CI que publica o artefato do Windows | O instalador instala e abre numa conta limpa; assinatura fica para o [W9](RISKS-AND-SPIKES.md#w9-empacotamento-assinatura-e-smartscreen) | M |
 | E5 | **Arquivos de projeto**: `CONTRIBUTING`, modelos de issue e de PR, política de segurança do GitHub | Presentes e linkados no README | S |

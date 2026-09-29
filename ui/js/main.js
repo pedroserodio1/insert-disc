@@ -53,6 +53,22 @@ const ctx = {
     const a = h('a', { href: url, download: 'insert-disc-estante.json' });
     document.body.append(a); a.click(); a.remove(); URL.revokeObjectURL(url);
   },
+  /** Escolher um arquivo de imagem como capa do jogo (o backend valida e reencoda, SECURITY R6). */
+  pickCover(gameId) {
+    const input = h('input', { type: 'file', accept: 'image/png,image/jpeg,image/webp', style: 'display:none' });
+    input.addEventListener('change', async () => {
+      const file = input.files?.[0];
+      input.remove();
+      if (!file) return;
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      let bin = '';
+      for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+      const res = await bridge.setCover({ game_id: gameId, data: btoa(bin) }).catch((e) => ({ error: String(e) }));
+      if (res?.error || typeof res === 'string') flash('cover_refused');
+      await refresh();
+    });
+    document.body.append(input); input.click();
+  },
   importCatalog() {
     const input = h('input', { type: 'file', accept: 'application/json,.json', style: 'display:none' });
     input.addEventListener('change', async () => {
@@ -152,8 +168,13 @@ window.addEventListener('blur', holdCancel);
 function showToast(tv) {
   if (!tv || tv.id === toastId) return;
   toastId = tv.id;
-  const text = t(`toast.${tv.code}`, { other: tv.params?.other ?? '' });
-  const bad = ['drive_removed', 'read_error', 'not_a_game'].includes(tv.code);
+  flash(tv.code, tv.params?.other ?? '');
+}
+
+/** Aviso local da UI (não vem do núcleo, não interfere na deduplicação dos avisos dele). */
+function flash(code, other = '') {
+  const text = t(`toast.${code}`, { other });
+  const bad = ['drive_removed', 'read_error', 'not_a_game', 'cover_refused'].includes(code);
   toastEl.textContent = text;
   toastEl.style.setProperty('--tc', bad ? 'var(--laser)' : 'var(--ftalocianina)');
   toastEl.hidden = false;

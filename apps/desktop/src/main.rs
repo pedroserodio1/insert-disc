@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use insert_disc_host::Host;
 use serde_json::Value;
-use tauri::State;
+use tauri::{Manager, State};
 
 type Shared = Arc<Mutex<Host>>;
 
@@ -29,6 +29,11 @@ fn export_catalog(host: State<Shared>) -> String {
 #[tauri::command]
 fn import_catalog(host: State<Shared>, json: String) -> Result<(), String> {
     host.lock().unwrap().import_json(&json)
+}
+
+#[tauri::command]
+fn set_cover(host: State<Shared>, request: Value) -> Result<Value, String> {
+    host.lock().unwrap().set_cover_json(&request)
 }
 
 #[tauri::command]
@@ -78,7 +83,17 @@ fn main() {
 
     tauri::Builder::default()
         .manage(host)
-        .invoke_handler(tauri::generate_handler![snapshot, intent, export_catalog, import_catalog, steam_games, dev_state, dev])
+        // capas salvas: só nomes gerados pelo app (`Host::cover_file` valida), nunca caminhos
+        .register_uri_scheme_protocol("cover", |ctx, request| {
+            let host = ctx.app_handle().state::<Shared>();
+            let name = request.uri().path().trim_start_matches('/').to_string();
+            let bytes = host.lock().unwrap().cover_file(&name).and_then(|p| std::fs::read(p).ok());
+            match bytes {
+                Some(b) => tauri::http::Response::builder().header("Content-Type", "image/jpeg").body(b).unwrap(),
+                None => tauri::http::Response::builder().status(404).body(Vec::new()).unwrap(),
+            }
+        })
+        .invoke_handler(tauri::generate_handler![snapshot, intent, export_catalog, import_catalog, steam_games, set_cover, dev_state, dev])
         .run(tauri::generate_context!())
         .expect("falha ao iniciar o app");
 }

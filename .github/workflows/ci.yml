@@ -32,6 +32,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Links relativos e âncoras
         run: node scripts/check-docs.js
+      - name: Contraste dos tokens e cores fora de token
+        run: node scripts/check-contrast.js
+      - name: Testes da UI
+        run: node --test ui/test/ui.test.js
       - name: Sintaxe dos módulos da UI
         run: for f in ui/js/*.js; do node --check "$f"; done
 

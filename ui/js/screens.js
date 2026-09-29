@@ -396,6 +396,7 @@ export function gameOptions(snap, ctx) {
   const g = snap.game;
   const defs = [
     { label: t('options.edit'), run: () => ctx.openForm('edit'), initial: true },
+    { label: t('options.cover'), run: () => ctx.pickCover(g.game_id) },
     ...actionDefs(snap, ctx).map((d) => ({ ...d, initial: false })),
   ];
   const list = makeList(defs, { scroll: true });
@@ -448,7 +449,7 @@ function steamPick(snap, ctx) {
   const games = ctx.ui.steamGames ?? [];
   const done = () => ctx.closeForm(); // nome e AppID vêm da Steam: o núcleo não recusa
   const defs = [
-    ...games.map((g) => ({ label: g.name, value: String(g.app_id), run: async () => { await ctx.send({ type: 'create_game', name: g.name, kind: 'steam', app_id: g.app_id }); done(); } })),
+    ...games.map((g) => ({ label: g.name, value: String(g.app_id), run: async () => { await ctx.send({ type: 'create_game', name: g.name, kind: 'steam', app_id: g.app_id, steam_cover: true }); done(); } })),
     { label: t('steam.pick.manual'), run: () => ctx.openForm('steam-manual') },
   ];
   const list = makeList(defs, { scroll: true });

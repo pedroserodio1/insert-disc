@@ -66,6 +66,7 @@ Regras gerais:
 | `laser` | `#F2645F` | Laser de leitura | Erros e rejeições sobre `azo` |
 | `laser-escuro` | `#B3261E` | — | Erros sobre `etiqueta` (anel de "segurar", textos de erro em diálogos) |
 | `grafite` | `#5B6472` | — | Texto secundário sobre `etiqueta` (ex.: "não informado"); face do disco ilegível |
+| `etiqueta-dialogo` | `#E6EAE9` | `etiqueta` levemente escurecida | Folha dentro de diálogos sobre o véu (mesmos pares de `etiqueta`) |
 
 Contraste (WCAG, calculado):
 

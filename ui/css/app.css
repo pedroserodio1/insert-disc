@@ -138,7 +138,7 @@ h1, h2, p, dl, dd, ul { margin: 0; padding: 0; }
 .dialog { background: var(--etiqueta); color: var(--azo); padding: calc(var(--u) * 4); max-width: calc(var(--s) * 900); animation: enter var(--dur-transicao) ease-out; }
 .dialog .tipo-secao { margin-bottom: var(--u); }
 .dialog .tipo-corpo { max-width: 60ch; }
-.dialog .sheet { margin-top: calc(var(--u) * 2); padding: calc(var(--u) * 2); background: #e6eae9; max-width: none; }
+.dialog .sheet { margin-top: calc(var(--u) * 2); padding: calc(var(--u) * 2); background: var(--etiqueta-dialogo); max-width: none; }
 .dialog .btns { display: flex; gap: calc(var(--u) * 2); margin-top: calc(var(--u) * 3); flex-wrap: wrap; }
 .btn { padding: var(--u) calc(var(--u) * 3); background: var(--azo); color: var(--etiqueta); display: inline-flex; align-items: center; gap: var(--u); }
 .btn.secondary { background: transparent; color: var(--azo); border: calc(var(--s) * 2) solid var(--azo); }

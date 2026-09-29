@@ -17,7 +17,7 @@ Enviado inteiro a cada mudança (simples e sem ambiguidade; o volume é pequeno)
 |---|---|
 | `version` | Versão do contrato |
 | `state` | Nome do estado ([UX-STATES](UX-STATES.md)) |
-| `game` | Jogo em contexto (X): `game_id`, `name`, `kind`, `cover` (URL local servida pelo Tauri), `spine_color`, `disc_count`, e para a edição `app_id`, `executable`, `args`, `working_dir`, `requires_elevation` |
+| `game` | Jogo em contexto (X): `game_id`, `name`, `kind`, `cover` (`cover:<id>.jpg` de uma capa salva pelo app, ou URL relativa da demonstração; a UI a traduz para o protocolo `cover` do Tauri ou `/cover/` no servidor de desenvolvimento), `spine_color`, `disc_count`, e para a edição `app_id`, `executable`, `args`, `working_dir`, `requires_elevation` |
 | `other_game` | Y, em `OTHER_GAME` / `KNOWN` |
 | `game_discs` | Discos do jogo em contexto (`disc_id`, `label`, `created_at`, `origin`), usados na tela de opções |
 | `media` | Última leitura: `label`, `physical`, `disc_id`, `ini_name`, `class` |
@@ -58,6 +58,8 @@ O núcleo **ignora** intenções inválidas para o estado atual: a resposta é `
 |---|---|
 | Servidor de desenvolvimento (navegador) | `GET /api/snapshot`, `POST /api/intent`; a UI consulta o instantâneo a cada 100 ms. Também `GET /api/export` e `POST /api/import` (estante), e `/api/dev` para o drive falso. |
 | App Tauri | Os mesmos comandos (`snapshot`, `intent`) por `invoke`, sobre o mesmo `Host` |
+
+Fora do fluxo de estados (não mudam o estado da tela): `steam_games` (`GET /api/steam`: jogos instalados na Steam, `{available, games:[{app_id, name}]}`), `set_cover` (`POST /api/cover`: `{game_id, data}` com a imagem em base64; recusas voltam erro com o motivo) e o protocolo `cover` (`GET /cover/<id>.jpg` no servidor de desenvolvimento) que serve só capas salvas pelo app. `create_game` aceita `steam_cover: true` para copiar a capa do cache da Steam.
 
 `focus_hint` é entregue **uma vez**: quem pega o instantâneo o consome. Há um único cliente de UI, então isso basta.
 

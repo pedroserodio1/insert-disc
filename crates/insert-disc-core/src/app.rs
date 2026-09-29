@@ -303,6 +303,13 @@ impl<D: DriveBackend, L: Launcher> App<D, L> {
         self.last_media.as_ref()
     }
 
+    /// Altera o catálogo por fora da máquina de estados (ex.: capa importada) e persiste.
+    pub fn update_catalog<R>(&mut self, f: impl FnOnce(&mut Catalog) -> R) -> R {
+        let r = f(&mut self.catalog);
+        self.persist();
+        r
+    }
+
     /// Exporta a estante (JSON, sem segredos).
     pub fn export_catalog(&self) -> String {
         self.catalog.to_json()

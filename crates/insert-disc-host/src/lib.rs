@@ -2,6 +2,7 @@
 //! `Snapshot` como JSON e oferece controles de desenvolvimento do drive falso.
 //! Nada aqui depende de Tauri: o app desktop e o servidor de desenvolvimento usam o mesmo `Host`.
 
+pub mod covers;
 pub mod demo;
 pub mod launcher;
 pub mod steam;
@@ -41,6 +42,8 @@ pub struct Host {
     launcher: LogLauncher,
     start: Instant,
     demo: Option<demo::Demo>,
+    /// Pasta das capas salvas.
+    covers_dir: Option<std::path::PathBuf>,
 }
 
 fn uuid_of(v: &Value, key: &str) -> Result<Uuid, String> {
@@ -140,7 +143,7 @@ impl Host {
         let launcher = LogLauncher::default();
         let mut drive = FakeIsoDrive::new(dir.join("burned"));
         demo.insert_default(&mut drive);
-        Host { app: App::boot(Ok(catalog), None, drive, launcher.clone(), 0), launcher, start: Instant::now(), demo: Some(demo) }
+        Host { app: App::boot(Ok(catalog), None, drive, launcher.clone(), 0), launcher, start: Instant::now(), demo: Some(demo), covers_dir: Some(dir.join("covers")) }
     }
 
     /// Modo real: catálogo em `data_dir/catalog.json` (ausente = estante vazia; corrompido =
@@ -155,7 +158,7 @@ impl Host {
             drive.disconnect();
         }
         let app = App::boot(Catalog::load(&path), Some(path), drive, launcher.clone(), 0);
-        Host { app, launcher, start: Instant::now(), demo: None }
+        Host { app, launcher, start: Instant::now(), demo: None, covers_dir: Some(dir.join("covers")) }
     }
 
     fn now(&self) -> u64 {
@@ -177,10 +180,64 @@ impl Host {
         let intent = parse_intent(v)?;
         let now = self.now();
         Ok(match self.app.dispatch(intent, now) {
-            Ok(()) => json!({ "ok": true }),
+            Ok(()) => {
+                if v.get("steam_cover").and_then(Value::as_bool) == Some(true) {
+                    self.steam_cover_for_last_game(); // capa é opcional: sem ela fica o placeholder
+                }
+                json!({ "ok": true })
+            }
             Err(IntentError::Ignored) => json!({ "ignored": true }),
             Err(IntentError::Invalid(e)) => json!({ "invalid": format!("{e:?}") }),
         })
+    }
+
+    /// Capa de um jogo a partir de bytes de imagem (B1): valida, reencoda, salva em `covers/` e
+    /// preenche `cover` e `spine_color`. Substitui (e apaga) a capa salva anterior.
+    pub fn set_cover(&mut self, game_id: Uuid, bytes: &[u8], source: CoverSource) -> Result<(), String> {
+        let dir = self.covers_dir.clone().ok_or("sem pasta de capas (modo demonstração)")?;
+        self.app.catalog.game(game_id).ok_or("jogo inexistente")?;
+        let cover = covers::process(bytes).map_err(|e| format!("capa recusada: {e:?}"))?;
+        let name = format!("{}.jpg", Uuid::new_v4());
+        std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+        std::fs::write(dir.join(&name), &cover.jpeg).map_err(|e| e.to_string())?;
+        let old = self.app.update_catalog(|c| {
+            let g = c.games.iter_mut().find(|g| g.game_id == game_id)?;
+            let old = g.cover.replace(format!("cover:{name}"));
+            g.cover_source = Some(source);
+            g.spine_color = Some(cover.spine);
+            old
+        });
+        if let Some(old) = old.as_deref().and_then(|o| o.strip_prefix("cover:")).and_then(|o| covers::file_in(&dir, o)) {
+            let _ = std::fs::remove_file(old);
+        }
+        Ok(())
+    }
+
+    /// Entrada da UI: `{game_id, data}` com `data` em base64 (imagem escolhida pelo usuário).
+    pub fn set_cover_json(&mut self, v: &Value) -> Result<Value, String> {
+        use base64::Engine;
+        let id = uuid_of(v, "game_id")?;
+        let b64 = str_of(v, "data")?;
+        if b64.len() > covers::MAX_BYTES * 4 / 3 + 8 {
+            return Err("capa recusada: TooBig".into());
+        }
+        let bytes = base64::engine::general_purpose::STANDARD.decode(b64).map_err(|_| "base64 inválido")?;
+        self.set_cover(id, &bytes, CoverSource::UserFile)?;
+        Ok(json!({ "ok": true }))
+    }
+
+    /// B2: depois de `create_game` de um jogo da Steam, copia a capa do cache da Steam pelo pipeline.
+    fn steam_cover_for_last_game(&mut self) {
+        let Some(g) = self.app.catalog.games.last() else { return };
+        let GameKind::Steam { app_id } = g.kind else { return };
+        let id = g.game_id;
+        let Some(bytes) = steam::find_steam().and_then(|root| steam::cover_path(&root, app_id)).and_then(|p| std::fs::read(p).ok()) else { return };
+        let _ = self.set_cover(id, &bytes, CoverSource::SteamCache);
+    }
+
+    /// Arquivo de uma capa salva, para o protocolo de capas (só nomes gerados pelo app).
+    pub fn cover_file(&self, name: &str) -> Option<std::path::PathBuf> {
+        covers::file_in(self.covers_dir.as_deref()?, name)
     }
 
     pub fn export_json(&self) -> String {
