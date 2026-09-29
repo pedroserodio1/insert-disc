@@ -63,6 +63,7 @@ Convenção usada em todos os documentos:
 | [PLATFORMS](docs/PLATFORMS.md) | O que é Windows, o que muda no Linux, o que é portátil |
 | [RISKS-AND-SPIKES](docs/RISKS-AND-SPIKES.md) | Riscos como spikes com critério de sucesso e falha |
 | [ROADMAP](docs/ROADMAP.md) | Ordem sugerida de trabalho |
+| [BACKLOG-SEM-DEPENDENCIAS](docs/BACKLOG-SEM-DEPENDENCIAS.md) | O que falta e dá para fazer sem drive, controle nem nada externo, e o que fica bloqueado |
 | [OPEN-QUESTIONS](docs/OPEN-QUESTIONS.md) | Tudo o que está em aberto |
 | [HARDWARE-AND-MATERIALS](docs/HARDWARE-AND-MATERIALS.md) | Lista de compras de referência |
 | [adr/](docs/adr/README.md) | Registros de decisão |

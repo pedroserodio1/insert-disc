@@ -25,4 +25,6 @@ flowchart TD
 | **1f** | Instalador, assinatura (ou alternativa), checksums, primeiro release | Instalação limpa numa máquina sem ambiente de dev |
 | **2** | Linux (L1–L8), incluindo gamescope. **A confirmar.** | — |
 
+A fila detalhada do que dá para fazer agora, sem hardware nem nada externo, está em [BACKLOG-SEM-DEPENDENCIAS](BACKLOG-SEM-DEPENDENCIAS.md).
+
 Capas online ([W10](RISKS-AND-SPIKES.md#w10-capas-online)) podem entrar em qualquer ponto depois de 1d, por ser opcional.
