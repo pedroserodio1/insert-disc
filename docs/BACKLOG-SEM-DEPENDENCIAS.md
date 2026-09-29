@@ -42,8 +42,8 @@ Legenda: **S** pequeno (horas), **M** médio, **G** grande.
 
 | # | Item | Pronto quando | Tam. |
 |---|---|---|---|
-| C1 | **`WindowsDrive`, parte de leitura**: listar unidades ópticas (`Win32_CDROMDrive`), ler `MediaLoaded`, `VolumeName` e o `GAME.INI` do volume, gatilho por `WM_DEVICECHANGE` **mais** polling ([W2](RISKS-AND-SPIKES.md#w2-detecção-de-inserção-e-remoção): a ISO montada chega com `flags=0`) | Com `Mount-DiskImage` de uma ISO gerada pelo projeto, o núcleo recebe `MediaArrived`/`MediaRemoved` e classifica o disco pelo mesmo caminho do drive físico | G |
-| C2 | **Escolha do drive nas configurações** com a regra de que ISOs montadas criam unidades novas ([TESTING-WITH-ISO](TESTING-WITH-ISO.md#montagem-nativa-no-windows)) | A lista mostra as unidades atuais; escolher uma persiste; unidade sumindo leva a `DRIVE_PROBLEM` | S |
+| C1 ✅ | **`WindowsDrive`, parte de leitura**: listar unidades ópticas (`Win32_CDROMDrive`), ler `MediaLoaded`, `VolumeName` e o `GAME.INI` do volume, gatilho por `WM_DEVICECHANGE` **mais** polling ([W2](RISKS-AND-SPIKES.md#w2-detecção-de-inserção-e-remoção): a ISO montada chega com `flags=0`) | Com `Mount-DiskImage` de uma ISO gerada pelo projeto, o núcleo recebe `MediaArrived`/`MediaRemoved` e classifica o disco pelo mesmo caminho do drive físico | G |
+| C2 ✅ | **Escolha do drive nas configurações** com a regra de que ISOs montadas criam unidades novas ([TESTING-WITH-ISO](TESTING-WITH-ISO.md#montagem-nativa-no-windows)) | A lista mostra as unidades atuais; escolher uma persiste; unidade sumindo leva a `DRIVE_PROBLEM` | S |
 | C3 | **Teste de foco com um "jogo" fictício** ([W8](RISKS-AND-SPIKES.md#w8-tela-cheia-e-foco)): um programa de janela própria que o app lança; medir como o app sai da frente e como volta | Procedimento documentado (minimizar, retorno) e o comportamento escolhido implementado | M |
 
 ### D. Controle sem controle

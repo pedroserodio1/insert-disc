@@ -5,7 +5,7 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use insert_disc_host::Host;
+use insert_disc_host::{DriveMode, Host};
 use serde_json::Value;
 use tauri::{Manager, State};
 
@@ -61,7 +61,8 @@ fn data_dir() -> std::path::PathBuf {
 }
 
 /// `--demo`: estante de exemplo em pasta temporária (nunca toca os dados do usuário).
-/// `--fake-drive`: catálogo real com o drive falso (padrão só em builds de depuração; Q7, SECURITY R8).
+/// `--fake-drive` / `--real-drive`: drive falso (ISO) ou o do Windows. Padrão: falso em depuração,
+/// Windows em release (Q7, SECURITY R8).
 /// `--real-launch` / `--log-launch`: abre jogos de verdade ou só registra (padrão: real em release, log em depuração).
 fn build_host() -> Host {
     let args: Vec<String> = std::env::args().collect();
@@ -70,7 +71,14 @@ fn build_host() -> Host {
         return Host::demo(std::env::temp_dir().join("insert-disc-demo"));
     }
     let real_launch = has("--real-launch") || (!cfg!(debug_assertions) && !has("--log-launch"));
-    Host::open(data_dir(), has("--fake-drive") || cfg!(debug_assertions), real_launch)
+    let mode = if has("--fake-drive") {
+        DriveMode::Fake
+    } else if has("--real-drive") || !cfg!(debug_assertions) {
+        if cfg!(windows) { DriveMode::Windows } else { DriveMode::None }
+    } else {
+        DriveMode::Fake
+    };
+    Host::open(data_dir(), mode, real_launch)
 }
 
 fn main() {

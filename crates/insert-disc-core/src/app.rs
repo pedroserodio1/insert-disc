@@ -331,9 +331,15 @@ impl<D: DriveBackend, L: Launcher> App<D, L> {
     fn select_drive(&mut self) {
         let list = self.drive.list_drives();
         let wanted = self.catalog.settings.drive.clone();
-        let pick = list.iter().find(|d| Some(&d.id) == wanted.as_ref()).or(list.first()).map(|d| d.id.clone());
+        // escolha explícita que sumiu não cai em outra unidade: é DRIVE_PROBLEM (C2); em "auto", a primeira
+        let pick = match &wanted {
+            Some(w) => list.iter().find(|d| &d.id == w),
+            None => list.first(),
+        }
+        .map(|d| d.id.clone());
         self.drive_status = if pick.is_some() { DriveStatus::Ok } else if self.drive_id.is_some() { DriveStatus::Removed } else { DriveStatus::None };
-        if pick.is_some() {
+        if let Some(id) = &pick {
+            self.drive.watch(id);
             self.drive_id = pick;
         }
     }
@@ -496,6 +502,13 @@ impl<D: DriveBackend, L: Launcher> App<D, L> {
                 self.select_drive();
                 if matches!(self.state, State::DriveProblem { reason: ProblemReason::NoDrive | ProblemReason::Removed }) && self.drive_status == DriveStatus::Ok {
                     self.state = State::Library;
+                }
+                // Uma unidade nova que já chega com mídia (ISO montada = "inserir o disco") vale como
+                // chegada de mídia na unidade em uso.
+                if let Some(d) = self.drive_id.clone().filter(|_| self.drive_status == DriveStatus::Ok) {
+                    if !self.media_present && self.drive.media_present(&d) {
+                        self.on_event(DriveEvent::MediaArrived);
+                    }
                 }
             }
             DriveEvent::DriveRemoved => {

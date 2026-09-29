@@ -147,6 +147,9 @@ pub trait DriveBackend {
     fn start_op(&mut self, drive: &str, op: DriveOp, now: u64);
     /// Progresso e resultados desde a última chamada (`now` em ms, para backends simulados).
     fn poll_ops(&mut self, now: u64) -> Vec<OpUpdate>;
+    /// A unidade escolhida: os eventos de mídia (`MediaArrived`/`MediaRemoved`) valem só para ela.
+    /// Backends com uma única unidade (o falso) ignoram.
+    fn watch(&mut self, _drive: &str) {}
     /// Eventos acumulados desde a última chamada.
     fn poll_events(&mut self) -> Vec<DriveEvent>;
 }

@@ -820,3 +820,35 @@ fn a5_pulling_the_disc_during_a_burn_fails_it_as_drive_removed() {
     e.app.pump(1500);
     assert!(matches!(e.app.state(), State::BurnFailed { reason: BurnFailure::DriveRemoved, .. }), "{:?}", e.app.state());
 }
+
+// ---------- C2: escolha do drive ----------
+
+#[test]
+fn c2_a_chosen_drive_that_disappears_is_a_drive_problem_and_auto_follows_what_exists() {
+    let mut e = env();
+    let snap = e.app.snapshot();
+    assert_eq!(snap.drives.iter().map(|d| d.id.as_str()).collect::<Vec<_>>(), ["fake:0"]);
+    assert_eq!(snap.drive_in_use.as_deref(), Some("fake:0"));
+
+    // escolha explícita de uma unidade que existe: mantém e persiste nas configurações
+    e.app.dispatch(Intent::OpenSettings, 0).unwrap();
+    e.app.dispatch(Intent::SetSetting(SettingChange::Drive(Some("fake:0".into()))), 1).unwrap();
+    assert_eq!(e.app.catalog.settings.drive.as_deref(), Some("fake:0"));
+    e.app.dispatch(Intent::Back, 2).unwrap();
+
+    // some: sem fallback silencioso
+    e.app.drive_mut().disconnect();
+    e.app.pump(3);
+    e.select(e.x, 4);
+    assert_eq!(e.name(), "DRIVE_PROBLEM");
+    let snap = e.app.snapshot();
+    assert!(snap.drives.is_empty() && snap.drive_in_use.is_none());
+
+    // volta o drive e, em "auto", segue a primeira unidade existente
+    e.app.dispatch(Intent::Back, 5).unwrap();
+    e.app.drive_mut().reconnect();
+    e.app.pump(6);
+    e.app.dispatch(Intent::OpenSettings, 7).unwrap();
+    e.app.dispatch(Intent::SetSetting(SettingChange::Drive(None)), 8).unwrap();
+    assert_eq!(e.app.snapshot().drive_in_use.as_deref(), Some("fake:0"));
+}

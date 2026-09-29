@@ -2,10 +2,12 @@
 //! `Snapshot` como JSON e oferece controles de desenvolvimento do drive falso.
 //! Nada aqui depende de Tauri: o app desktop e o servidor de desenvolvimento usam o mesmo `Host`.
 
+pub mod anydrive;
 pub mod covers;
 pub mod demo;
 pub mod launcher;
 pub mod steam;
+pub mod windrive;
 
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
@@ -14,6 +16,18 @@ use insert_disc_core::app::*;
 use insert_disc_core::catalog::*;
 use insert_disc_core::drive::{Capabilities, Tri};
 use insert_disc_core::fake::FakeIsoDrive;
+
+pub use anydrive::AnyDrive;
+
+/// Qual drive o app usa (Q7): o do Windows, o falso (ISO) ou nenhum.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DriveMode {
+    Windows,
+    Fake,
+    None,
+}
+
+const NO_FAKE: &str = "o drive falso não está em uso";
 use insert_disc_core::launch::{LaunchError, LaunchRequest, Launcher};
 use serde_json::{json, Value};
 use uuid::Uuid;
@@ -38,7 +52,7 @@ impl Launcher for LogLauncher {
 }
 
 pub struct Host {
-    pub app: App<FakeIsoDrive, LogLauncher>,
+    pub app: App<AnyDrive, LogLauncher>,
     launcher: LogLauncher,
     start: Instant,
     demo: Option<demo::Demo>,
@@ -143,20 +157,24 @@ impl Host {
         let launcher = LogLauncher::default();
         let mut drive = FakeIsoDrive::new(dir.join("burned"));
         demo.insert_default(&mut drive);
-        Host { app: App::boot(Ok(catalog), None, drive, launcher.clone(), 0), launcher, start: Instant::now(), demo: Some(demo), covers_dir: Some(dir.join("covers")) }
+        Host { app: App::boot(Ok(catalog), None, AnyDrive::Fake(drive), launcher.clone(), 0), launcher, start: Instant::now(), demo: Some(demo), covers_dir: Some(dir.join("covers")) }
     }
 
     /// Modo real: catálogo em `data_dir/catalog.json` (ausente = estante vazia; corrompido =
-    /// `CATALOG_ERROR`, sem sobrescrever). Ainda não há drive físico (W2-W5): sem `fake_drive`
-    /// o app fica "sem drive"; com ele, o drive falso serve para experimentar (Q7, SECURITY R8).
-    pub fn open(data_dir: impl Into<std::path::PathBuf>, fake_drive: bool, real_launch: bool) -> Self {
+    /// `CATALOG_ERROR`, sem sobrescrever). O drive vem de `mode` (Q7, SECURITY R8).
+    pub fn open(data_dir: impl Into<std::path::PathBuf>, mode: DriveMode, real_launch: bool) -> Self {
         let dir = data_dir.into();
         let path = dir.join("catalog.json");
         let launcher = LogLauncher { real: real_launch, ..Default::default() };
-        let mut drive = FakeIsoDrive::new(dir.join("burned"));
-        if !fake_drive {
-            drive.disconnect();
-        }
+        let drive = match mode {
+            DriveMode::Windows => AnyDrive::Windows(windrive::WindowsDrive::new()),
+            DriveMode::Fake => AnyDrive::Fake(FakeIsoDrive::new(dir.join("burned"))),
+            DriveMode::None => {
+                let mut d = FakeIsoDrive::new(dir.join("burned"));
+                d.disconnect(); // sem unidade: o app mostra "sem drive"
+                AnyDrive::Fake(d)
+            }
+        };
         let app = App::boot(Catalog::load(&path), Some(path), drive, launcher.clone(), 0);
         Host { app, launcher, start: Instant::now(), demo: None, covers_dir: Some(dir.join("covers")) }
     }
@@ -257,7 +275,8 @@ impl Host {
 
     /// Estado do drive falso e do lançador, para o painel de desenvolvimento.
     pub fn dev_state(&mut self) -> Value {
-        let caps = self.app.drive_mut().capabilities_now();
+        let fake = self.app.drive().fake();
+        let caps = fake.map_or(Capabilities::ALL, |d| d.capabilities_now());
         let games: Vec<Value> = self
             .app
             .catalog
@@ -266,10 +285,11 @@ impl Host {
             .map(|g| json!({ "game_id": g.game_id, "name": g.name, "has_disc": !g.discs.is_empty() }))
             .collect();
         json!({
-            "has_media": self.app.drive().has_media(),
+            "fake_drive": fake.is_some(),
+            "has_media": fake.is_some_and(|d| d.has_media()),
             "media_present": self.app.media_present(),
             "armed": self.app.armed(),
-            "op_delay_ms": self.app.drive().op_delay_ms(),
+            "op_delay_ms": fake.map_or(0, |d| d.op_delay_ms()),
             "launched": *self.launcher.log.lock().unwrap(),
             "caps": {
                 "tray_open": caps.tray_open == Tri::Yes, "eject": caps.eject == Tri::Yes,
@@ -286,21 +306,21 @@ impl Host {
             "insert" => {
                 let what = str_of(v, "what")?.to_string();
                 // um disco já no drive é trocado: remove e insere (eventos em sequência)
-                if self.app.drive().has_media() {
-                    self.app.drive_mut().remove_media();
+                if self.app.drive().fake().is_some_and(|d| d.has_media()) {
+                    self.app.drive_mut().fake_mut().ok_or(NO_FAKE)?.remove_media();
                 }
-                self.demo.as_ref().ok_or("sem modo demonstração")?.insert(self.app.drive_mut(), &what)?;
+                self.demo.as_ref().ok_or("sem modo demonstração")?.insert(self.app.drive_mut().fake_mut().ok_or(NO_FAKE)?, &what)?;
             }
-            "remove" => self.app.drive_mut().remove_media(),
-            "op_delay" => self.app.drive_mut().set_op_delay_ms(v["ms"].as_u64().unwrap_or(0).min(60_000)),
-            "duplicate" => self.app.drive_mut().inject_duplicate_arrival(),
-            "disconnect" => self.app.drive_mut().disconnect(),
-            "reconnect" => self.app.drive_mut().reconnect(),
-            "fail_burn" => self.app.drive_mut().set_fail_burn(v["on"].as_bool().unwrap_or(true)),
-            "fail_erase" => self.app.drive_mut().set_fail_erase(v["on"].as_bool().unwrap_or(true)),
-            "fail_open_tray" => self.app.drive_mut().set_fail_open_tray(v["on"].as_bool().unwrap_or(true)),
+            "remove" => self.app.drive_mut().fake_mut().ok_or(NO_FAKE)?.remove_media(),
+            "op_delay" => self.app.drive_mut().fake_mut().ok_or(NO_FAKE)?.set_op_delay_ms(v["ms"].as_u64().unwrap_or(0).min(60_000)),
+            "duplicate" => self.app.drive_mut().fake_mut().ok_or(NO_FAKE)?.inject_duplicate_arrival(),
+            "disconnect" => self.app.drive_mut().fake_mut().ok_or(NO_FAKE)?.disconnect(),
+            "reconnect" => self.app.drive_mut().fake_mut().ok_or(NO_FAKE)?.reconnect(),
+            "fail_burn" => self.app.drive_mut().fake_mut().ok_or(NO_FAKE)?.set_fail_burn(v["on"].as_bool().unwrap_or(true)),
+            "fail_erase" => self.app.drive_mut().fake_mut().ok_or(NO_FAKE)?.set_fail_erase(v["on"].as_bool().unwrap_or(true)),
+            "fail_open_tray" => self.app.drive_mut().fake_mut().ok_or(NO_FAKE)?.set_fail_open_tray(v["on"].as_bool().unwrap_or(true)),
             "cap" => {
-                let d = self.app.drive_mut();
+                let d = self.app.drive_mut().fake_mut().ok_or(NO_FAKE)?;
                 let mut c: Capabilities = d.capabilities_now();
                 let t = if v["on"].as_bool().unwrap_or(true) { Tri::Yes } else { Tri::No };
                 match str_of(v, "name")? {

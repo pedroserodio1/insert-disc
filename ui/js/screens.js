@@ -419,8 +419,12 @@ export function settings(snap, ctx) {
   const langName = (l) => (l === 'pt-BR' ? 'Português (Brasil)' : l === 'en' ? 'English' : t('settings.language.system'));
   const insert = ['focus', 'launch'];
   const secs = st.loading_min_ms / 1000;
+  // Drive (C2): automático ou uma das unidades atuais; escolha que sumiu continua listada como ausente
+  const nameOf = (id) => snap.drives.find((d) => d.id === id)?.name ?? `${id} (${t('settings.drive.missing')})`;
+  const driveIds = [null, ...snap.drives.map((d) => d.id), ...(st.drive && !snap.drives.some((d) => d.id === st.drive) ? [st.drive] : [])];
+  const driveValue = st.drive ? nameOf(st.drive) : `${t('settings.drive.auto')}${snap.drive_in_use ? ` · ${nameOf(snap.drive_in_use)}` : ` · ${t('common.none')}`}`;
   const defs = [
-    { label: t('settings.drive'), value: st.drive ?? (snap.drive === 'ok' ? 'auto' : t('common.none')), run: () => {} },
+    { label: t('settings.drive'), value: driveValue, run: () => set('drive', cycle(driveIds, st.drive, 1)), left: () => set('drive', cycle(driveIds, st.drive, -1)), right: () => set('drive', cycle(driveIds, st.drive, 1)) },
     { label: t('settings.on_insert'), value: t(`settings.on_insert.${st.on_disc_insert}`), run: () => set('on_disc_insert', cycle(insert, st.on_disc_insert, 1)), left: () => set('on_disc_insert', cycle(insert, st.on_disc_insert, -1)), right: () => set('on_disc_insert', cycle(insert, st.on_disc_insert, 1)) },
     { label: t('settings.loading_min'), value: t('settings.seconds', { n: secs }), run: () => set('loading_min_ms', cycle(LOAD_STEPS, secs, 1) * 1000), left: () => set('loading_min_ms', cycle(LOAD_STEPS, secs, -1) * 1000), right: () => set('loading_min_ms', cycle(LOAD_STEPS, secs, 1) * 1000) },
     { label: t('settings.language'), value: langName(st.locale), run: () => set('locale', cycle(langs, st.locale, 1)), left: () => set('locale', cycle(langs, st.locale, -1)), right: () => set('locale', cycle(langs, st.locale, 1)) },

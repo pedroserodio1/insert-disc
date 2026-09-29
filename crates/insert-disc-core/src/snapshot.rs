@@ -57,6 +57,12 @@ pub struct Timing {
 }
 
 #[derive(Debug, Clone, Serialize)]
+pub struct DriveView {
+    pub id: String,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct ToastView {
     pub id: u64,
     pub code: &'static str,
@@ -82,6 +88,9 @@ pub struct Snapshot {
     pub timing: Option<Timing>,
     pub capabilities: serde_json::Value,
     pub drive: &'static str,
+    /// Unidades atuais (para escolher nas configurações, C2) e a que está em uso.
+    pub drives: Vec<DriveView>,
+    pub drive_in_use: Option<String>,
     pub library: Vec<GameView>,
     pub settings: Settings,
     /// Entregue uma única vez; a UI aplica e ignora repetições.
@@ -269,6 +278,8 @@ impl<D: DriveBackend, L: Launcher> App<D, L> {
                 "write_cdr": tri(caps.write_cdr), "write_cdrw": tri(caps.write_cdrw), "erase": tri(caps.erase),
                 "media_events": tri(caps.media_events),
             }),
+            drives: self.drive.list_drives().into_iter().map(|d| DriveView { id: d.id, name: d.name }).collect(),
+            drive_in_use: self.drive_id.clone().filter(|_| self.drive_status == DriveStatus::Ok),
             drive: match self.drive_status {
                 DriveStatus::Ok => "ok",
                 DriveStatus::None => "none",
