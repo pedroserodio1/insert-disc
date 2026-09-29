@@ -32,3 +32,4 @@ Termos: **"Etapa 1"** = a rodada de entendimento e perguntas feita antes da escr
 | [0019](0019-rejeicao-mantem-disco-e-atalhos.md) | Rejeição mantém o disco; "Jogar Y"; jogo sem disco oferece gravar | Aceito |
 | [0020](0020-nome-insert-disc.md) | Nome do projeto: Insert Disc | Aceito |
 | [0021](0021-frontend-js-css-sem-framework.md) | Front-end em JavaScript e CSS puros, sem framework nem build | Aceito |
+| [0022](0022-decisoes-de-produto-com-padrao-recomendado.md) | Q7, Q9, Q10, Q12, Q13, Q15, Q18–Q24 fechadas com o padrão recomendado | Aceito |

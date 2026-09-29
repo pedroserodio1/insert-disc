@@ -36,7 +36,7 @@ pub struct Host {
     pub app: App<FakeIsoDrive, LogLauncher>,
     launcher: LogLauncher,
     start: Instant,
-    demo: demo::Demo,
+    demo: Option<demo::Demo>,
 }
 
 fn uuid_of(v: &Value, key: &str) -> Result<Uuid, String> {
@@ -133,7 +133,22 @@ impl Host {
         let launcher = LogLauncher::default();
         let mut drive = FakeIsoDrive::new(dir.join("burned"));
         demo.insert_default(&mut drive);
-        Host { app: App::boot(Ok(catalog), None, drive, launcher.clone(), 0), launcher, start: Instant::now(), demo }
+        Host { app: App::boot(Ok(catalog), None, drive, launcher.clone(), 0), launcher, start: Instant::now(), demo: Some(demo) }
+    }
+
+    /// Modo real: catálogo em `data_dir/catalog.json` (ausente = estante vazia; corrompido =
+    /// `CATALOG_ERROR`, sem sobrescrever). Ainda não há drive físico (W2-W5): sem `fake_drive`
+    /// o app fica "sem drive"; com ele, o drive falso serve para experimentar (Q7, SECURITY R8).
+    pub fn open(data_dir: impl Into<std::path::PathBuf>, fake_drive: bool) -> Self {
+        let dir = data_dir.into();
+        let path = dir.join("catalog.json");
+        let launcher = LogLauncher::default();
+        let mut drive = FakeIsoDrive::new(dir.join("burned"));
+        if !fake_drive {
+            drive.disconnect();
+        }
+        let app = App::boot(Catalog::load(&path), Some(path), drive, launcher.clone(), 0);
+        Host { app, launcher, start: Instant::now(), demo: None }
     }
 
     fn now(&self) -> u64 {
@@ -189,7 +204,7 @@ impl Host {
                 "write_cdr": caps.write_cdr == Tri::Yes, "write_cdrw": caps.write_cdrw == Tri::Yes,
             },
             "games": games,
-            "scenarios": self.demo.scenario_names(),
+            "scenarios": self.demo.as_ref().map(|d| d.scenario_names()).unwrap_or_default(),
         })
     }
 
@@ -202,7 +217,7 @@ impl Host {
                 if self.app.drive().has_media() {
                     self.app.drive_mut().remove_media();
                 }
-                self.demo.insert(self.app.drive_mut(), &what)?;
+                self.demo.as_ref().ok_or("sem modo demonstração")?.insert(self.app.drive_mut(), &what)?;
             }
             "remove" => self.app.drive_mut().remove_media(),
             "duplicate" => self.app.drive_mut().inject_duplicate_arrival(),

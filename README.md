@@ -24,7 +24,7 @@ cargo run -p insert-disc-host
 Abra <http://127.0.0.1:5173/> (com `?dev=1` aparece o painel que simula discos, falhas e o drive). Teclado: setas, Enter, Esc, `N` (adicionar jogo), `O` (opções), `M` (configurações). Um controle também funciona (Gamepad API).
 
 ```bash
-cargo test                     # núcleo e API (57 + testes da camada host)
+cargo test                     # núcleo e API (59 + testes da camada host)
 cargo clippy --all-targets -- -D warnings
 node scripts/check-docs.js     # links e âncoras da documentação
 ```
@@ -37,7 +37,7 @@ O lançador do modo de desenvolvimento **só registra** o que executaria; nenhum
 cd apps/desktop && cargo run
 ```
 
-Abre a mesma UI numa janela do WebView2 (com o drive falso; `Ctrl+Shift+D` mostra o painel de simulação). É o jeito de **testar o controle de verdade** (spike [W1](docs/RISKS-AND-SPIKES.md#w1-gamepad-no-webview2)): conecte um controle, clique na janela e navegue. Se a Gamepad API não entregar os botões nessa janela, o plano B é ler o controle no Rust com o `gilrs` ([spikes/w1-gamepad](spikes/w1-gamepad/README.md) compara as duas fontes lado a lado).
+Abre a mesma UI numa janela do WebView2, com o catálogo em `%APPDATA%InsertDisctalog.json` (estante vazia na primeira vez). Opções: `--demo` (estante de exemplo em pasta temporária, sem tocar nos seus dados) e `--fake-drive` (drive falso com o catálogo real; já é o padrão em builds de depuração, em release só por essa flag). `Ctrl+Shift+D` mostra o painel de simulação. É o jeito de **testar o controle de verdade** (spike [W1](docs/RISKS-AND-SPIKES.md#w1-gamepad-no-webview2)): conecte um controle, clique na janela e navegue. Se a Gamepad API não entregar os botões nessa janela, o plano B é ler o controle no Rust com o `gilrs` ([spikes/w1-gamepad](spikes/w1-gamepad/README.md) compara as duas fontes lado a lado).
 
 ## Como navegar
 

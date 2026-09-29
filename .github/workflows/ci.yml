@@ -22,7 +22,7 @@ jobs:
         with:
           components: clippy
       - uses: Swatinem/rust-cache@v2
-      # o app desktop (Tauri) fica fora do workspace e não entra aqui
+      # o app desktop (Tauri) fica fora do workspace: job `desktop` abaixo
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
 
@@ -34,3 +34,15 @@ jobs:
         run: node scripts/check-docs.js
       - name: Sintaxe dos módulos da UI
         run: for f in ui/js/*.js; do node --check "$f"; done
+
+  desktop:
+    # app Tauri fora do workspace (dependência do WebView2): só verifica que compila
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop
+      - run: cargo check --locked
+        working-directory: apps/desktop

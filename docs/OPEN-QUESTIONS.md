@@ -45,6 +45,7 @@ Levantada durante a Etapa 1 e deixada fora da fase 1.
 - **Recomendação:** (a) na fase 1; decidir depois do [W8](RISKS-AND-SPIKES.md#w8-tela-cheia-e-foco).
 
 ## Q7. Drive falso em builds de release
+**Resolvida:** [ADR-0022](adr/0022-decisoes-de-produto-com-padrao-recomendado.md).
 
 - **Opções:** (a) só em builds de dev; (b) em release, atrás de uma flag de linha de comando; (c) sempre disponível nas configurações.
 - **Recomendação:** (b). Permite que quem não tem drive experimente o app, sem expor o recurso a usuários comuns ([SECURITY R8](SECURITY.md#r8-drive-falso)).
@@ -55,6 +56,7 @@ Levantada durante a Etapa 1 e deixada fora da fase 1.
 - **Recomendação:** (c), com fallback para (b). Mecanismo Windows a verificar na implementação.
 
 ## Q9. Campo de versão no `GAME.INI`
+**Resolvida:** [ADR-0022](adr/0022-decisoes-de-produto-com-padrao-recomendado.md).
 
 O formato decidido tem apenas `id` e `name` ([ADR-0012](adr/0012-game-ini-minimo-e-label-informativo.md)).
 
@@ -62,6 +64,7 @@ O formato decidido tem apenas `id` e `name` ([ADR-0012](adr/0012-game-ini-minimo
 - **Recomendação:** (a). Como chaves desconhecidas são ignoradas, qualquer evolução compatível dispensa versão. Adicionar só se surgir mudança incompatível.
 
 ## Q10. Disco inválido sem seleção
+**Resolvida:** [ADR-0022](adr/0022-decisoes-de-produto-com-padrao-recomendado.md).
 
 Inserção armada na biblioteca de um disco `UNKNOWN`, `AUDIO`, `BLANK` etc.
 
@@ -75,12 +78,14 @@ Timeout de `read_media`, intervalo de polling (se W2 levar a polling) e padrão 
 - **Recomendação:** medir no drive real (W2 e W3); `loading_min_ms` padrão de "alguns segundos" (ex.: 3 s) até ajuste pelo uso.
 
 ## Q12. Rascunho após falha
+**Resolvida:** [ADR-0022](adr/0022-decisoes-de-produto-com-padrao-recomendado.md).
 
 Um jogo **novo**, criado durante um cadastro cuja gravação falhou, deve ser mantido?
 
 - **Recomendação:** manter o jogo (sem discos), porque o usuário já preencheu os dados, e descartar apenas o disco.
 
 ## Q13. `.bat` e `.cmd` como executável
+**Resolvida:** [ADR-0022](adr/0022-decisoes-de-produto-com-padrao-recomendado.md).
 
 - **Opções:** (a) recusar; (b) permitir com aviso e sem argumentos; (c) permitir.
 - **Recomendação:** (b). Alguns jogos antigos só abrem por `.bat`, mas argumentos para `cmd.exe` são o vetor de injeção documentado ([docs Rust](https://doc.rust-lang.org/std/process/struct.Command.html)).
@@ -91,6 +96,7 @@ Um jogo **novo**, criado durante um cadastro cuja gravação falhou, deve ser ma
 - **Recomendação:** SteamGridDB, se os termos permitirem ([W10](RISKS-AND-SPIKES.md#w10-capas-online)).
 
 ## Q15. Regra de abreviação do rótulo
+**Resolvida:** [ADR-0022](adr/0022-decisoes-de-produto-com-padrao-recomendado.md).
 
 O limite do IMAPI2 é de 15 caracteres com charset restrito ([DISC-FORMAT](DISC-FORMAT.md#rótulo-do-volume)).
 
@@ -113,6 +119,7 @@ O design ([FRONTEND-DESIGN](FRONTEND-DESIGN.md)) exige componentes próprios, se
 - **Recomendação da época:** Svelte ou TypeScript puro, por serem leves e porque a UI é uma projeção do estado vindo do Rust.
 
 ## Q18. Entrada de texto com controle
+**Resolvida:** [ADR-0022](adr/0022-decisoes-de-produto-com-padrao-recomendado.md).
 
 Cadastro e configurações pedem texto (nome, caminho, argumentos, chave de API).
 
@@ -120,29 +127,35 @@ Cadastro e configurações pedem texto (nome, caminho, argumentos, chave de API)
 - **Recomendação:** (a) na fase 1, com o fluxo "jogar" 100% por controle. Seletor de arquivo e importação da Steam reduzem a digitação.
 
 ## Q19. Importar estante
+**Resolvida:** [ADR-0022](adr/0022-decisoes-de-produto-com-padrao-recomendado.md).
 
 - **Opções:** (a) substituir a estante atual (com backup automático antes); (b) mesclar, com regra para conflito de `disc_id`.
 - **Recomendação:** (a) na fase 1. Mesclar exige resolver conflitos (mesmo `disc_id` em jogos diferentes) e caminhos de jogos `custom` de outra máquina.
 
 ## Q20. Modo de janela padrão
+**Resolvida:** [ADR-0022](adr/0022-decisoes-de-produto-com-padrao-recomendado.md).
 
 - **Opções:** janela ou tela cheia na primeira execução.
 - **Recomendação:** janela na primeira execução (menos intrusivo enquanto o usuário configura); o usuário liga tela cheia nas configurações e a escolha persiste.
 
 ## Q21. Ordenação da biblioteca
+**Resolvida:** [ADR-0022](adr/0022-decisoes-de-produto-com-padrao-recomendado.md).
 
 - **Pontos:** ordem alfabética com colação do idioma (acentos), artigos iniciais ("The", "O"), números; como LB/RB agrupam por letra.
 - **Recomendação:** ordem alfabética com colação do idioma da UI, sem tratamento de artigos na fase 1; números antes das letras; LB/RB saltam para a próxima inicial existente.
 
 ## Q22. Instância única
+**Resolvida:** [ADR-0022](adr/0022-decisoes-de-produto-com-padrao-recomendado.md).
 
 - **Recomendação:** permitir só uma instância; abrir o app de novo traz a janela existente para a frente. Mecanismo no Tauri a verificar na implementação.
 
 ## Q23. Logs
+**Resolvida:** [ADR-0022](adr/0022-decisoes-de-produto-com-padrao-recomendado.md).
 
 - **Pontos:** local, rotação, conteúdo.
 - **Recomendação:** arquivo rotativo no diretório de dados do app; registrar estados, classes e erros; **nunca** a chave de API; caminhos de executável só em nível de depuração.
 
 ## Q24. Idioma e plural
+**Resolvida:** [ADR-0022](adr/0022-decisoes-de-produto-com-padrao-recomendado.md).
 
 - **Recomendação:** idioma do sistema se for pt-BR ou en; qualquer outro cai em en. Plurais pelo mecanismo da biblioteca de i18n escolhida (ex.: regras de plural do padrão ICU/CLDR), nunca por concatenação.

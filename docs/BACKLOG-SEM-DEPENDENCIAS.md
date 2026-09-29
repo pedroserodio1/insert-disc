@@ -8,7 +8,7 @@ Posição em 2026-09-29. "Sem nada externo" = só código e este PC: **sem drive
 |---|---|
 | Núcleo (`insert-disc-core`): `GAME.INI`, catálogo, ISO, drive falso, máquina de estados, snapshot | Feito, 59 testes |
 | `insert-disc-host` (API JSON, servidor de desenvolvimento) e UI (`ui/`) | Feito; fluxo de jogar e de cadastro verificados no navegador com o drive falso |
-| App desktop (`apps/desktop`) | **Compila; nunca foi aberto** |
+| App desktop (`apps/desktop`) | Abre no WebView2 e o fluxo de jogar funciona pelo IPC (E6 feito). **A1 feito:** catálogo em `%APPDATA%InsertDisc`, `--demo` e `--fake-drive` (Q7). No CI (job `desktop`). Achado: sem drive não há como cadastrar jogo (o cadastro passa pela gravação) e as capas de demonstração só existem no servidor de desenvolvimento |
 | Spikes W2 (parcial), W6, W7, W12 | Rodados; W13 parcial |
 
 O app de hoje é uma **demonstração**: estante de exemplo recriada a cada abertura, drive falso e um lançador que só registra o que executaria.
@@ -23,7 +23,7 @@ Legenda: **S** pequeno (horas), **M** médio, **G** grande.
 
 | # | Item | Por quê | Pronto quando | Tam. |
 |---|---|---|---|---|
-| A1 | **Catálogo persistente** no app: pasta de dados do usuário (`%APPDATA%\InsertDisc\`), modo demonstração só por opção explícita | Hoje a estante some ao fechar | Fechar e abrir mantém jogos, discos e configurações; arquivo corrompido leva a `CATALOG_ERROR` sem sobrescrever; teste com pasta temporária | S |
+| A1 ✅ | **Catálogo persistente** no app: pasta de dados do usuário (`%APPDATA%\InsertDisc\`), modo demonstração só por opção explícita | Hoje a estante some ao fechar | Fechar e abrir mantém jogos, discos e configurações; arquivo corrompido leva a `CATALOG_ERROR` sem sobrescrever; teste com pasta temporária | S |
 | A2 | **Lançador real (Windows)**: `Command` sem shell, URI da Steam por `explorer.exe`, erros mapeados (`NotFound`, `SteamMissing`, `ElevationDenied`) | Sem isso o app não abre jogo | Um `.exe` de teste abre com args e pasta de trabalho corretos; o lançador de demonstração continua sendo o padrão em desenvolvimento (trava explícita para não abrir jogo por engano) | M |
 | A3 | **Importar da Steam** no "Novo jogo da Steam": lista dos instalados (o código do [W6](RISKS-AND-SPIKES.md#w6-integração-com-a-steam) vira módulo, com filtro de ferramentas), escolha por lista em vez de digitar o AppID | O AppID à mão é inviável | Os 26 jogos deste PC aparecem; escolher um cria o jogo com nome e AppID; parser do VDF com testes (formato novo e antigo) | M |
 | A4 | **Edição completa do jogo**: hoje só dá para renomear; faltam executável, argumentos, pasta e elevação dos jogos `custom` | Sem isso um erro de digitação obriga apagar o jogo | Editar cada campo com a mesma validação da criação; `.bat`/`.cmd` com aviso ([Q13](OPEN-QUESTIONS.md#q13-bat-e-cmd-como-executável)) | S |
@@ -62,7 +62,7 @@ Legenda: **S** pequeno (horas), **M** médio, **G** grande.
 | E3 | **Re-medir o [W13](RISKS-AND-SPIKES.md#w13-desempenho-de-css-3d-no-webview2)** depois da correção da estante, com a janela do app visível | Números de quadros por segundo e tarefas longas registrados; ou o app desktop medido direto | S |
 | E4 | **Build local do instalador** (sem assinatura) e um workflow de release no CI que publica o artefato do Windows | O instalador instala e abre numa conta limpa; assinatura fica para o [W9](RISKS-AND-SPIKES.md#w9-empacotamento-assinatura-e-smartscreen) | M |
 | E5 | **Arquivos de projeto**: `CONTRIBUTING`, modelos de issue e de PR, política de segurança do GitHub | Presentes e linkados no README | S |
-| E6 | **Abrir e verificar o app desktop** (`apps/desktop`) no WebView2 | A janela sobe, a UI funciona, `Ctrl+Shift+D` mostra o painel; problemas achados viram itens aqui | S |
+| E6 ✅ | **Abrir e verificar o app desktop** (`apps/desktop`) no WebView2 | A janela sobe, a UI funciona, `Ctrl+Shift+D` mostra o painel; problemas achados viram itens aqui | S |
 
 ### E7–E11. Lacunas descobertas na revisão
 
@@ -70,7 +70,7 @@ Legenda: **S** pequeno (horas), **M** médio, **G** grande.
 |---|---|---|
 | E7 | Checklist de conformidade com [FRONTEND-DESIGN](FRONTEND-DESIGN.md): clique direito abre opções (§7), botão voltar do mouse, roda do mouse na estante, estante esmaecida atrás da caixa aberta (§6.3), escolha do drive nas configurações | M |
 | E8 | Trait `SystemIntegration` não existe (só `Launcher`): criar ou ajustar ARCHITECTURE, DRIVE-LAYER e ADR-0010 | S |
-| E9 | `apps/desktop` no CI; protocolo de assets do Tauri (pré-requisito de B1); `bundle.active=false` só até E4 | S |
+| E9 (CI feito) | `apps/desktop` no CI; protocolo de assets do Tauri (pré-requisito de B1); `bundle.active=false` só até E4 | S |
 | E10 | ARCHITECTURE.md com a estrutura real; cenários C1–C30 de TESTING-WITH-ISO mapeados para `flows.rs`; testes de import/export do Host | S |
 | E11 | Q11 (timeout de `read_media`), nota de disco editável, confirmação de import na UI, `focus_hint` com mais de um cliente | S |
 

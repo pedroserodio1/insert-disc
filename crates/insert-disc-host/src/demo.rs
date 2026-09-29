@@ -51,6 +51,8 @@ fn write_iso(dir: &Path, file: &str, label: &str, files: &[(&str, &[u8])]) -> Pa
 
 pub fn build(dir: &Path) -> (Catalog, Demo) {
     let isos = dir.join("isos");
+    // apaga a pasta inteira: só aceita pastas de demonstração/teste (nunca os dados do usuário)
+    assert!(dir.file_name().and_then(|n| n.to_str()).is_some_and(|n| n.starts_with("insert-disc-")), "pasta de demonstração inválida");
     let _ = fs::remove_dir_all(dir);
     fs::create_dir_all(&isos).expect("criar pasta de demonstração");
 

@@ -1,5 +1,5 @@
 // App desktop: janela Tauri sobre o mesmo `Host` do servidor de desenvolvimento.
-// Por enquanto usa o drive falso (o WindowsDrive depende dos spikes W2-W5); o lançador só registra.
+// Sem drive físico ainda (W2-W5): o drive falso só entra por opção; o lançador só registra.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::sync::{Arc, Mutex};
@@ -41,8 +41,28 @@ fn dev(host: State<Shared>, cmd: Value) -> Result<Value, String> {
     host.lock().unwrap().dev(&cmd)
 }
 
+/// Pasta de dados do usuário: `%APPDATA%\InsertDisc` no Windows, `~/.local/share/insert-disc` no resto.
+fn data_dir() -> std::path::PathBuf {
+    if let Some(a) = std::env::var_os("APPDATA") {
+        return std::path::PathBuf::from(a).join("InsertDisc");
+    }
+    let home = std::env::var_os("HOME").map(std::path::PathBuf::from).unwrap_or_else(std::env::temp_dir);
+    home.join(".local/share/insert-disc")
+}
+
+/// `--demo`: estante de exemplo em pasta temporária (nunca toca os dados do usuário).
+/// `--fake-drive`: catálogo real com o drive falso (padrão só em builds de depuração; Q7, SECURITY R8).
+fn build_host() -> Host {
+    let args: Vec<String> = std::env::args().collect();
+    let has = |f: &str| args.iter().any(|a| a == f);
+    if has("--demo") {
+        return Host::demo(std::env::temp_dir().join("insert-disc-demo"));
+    }
+    Host::open(data_dir(), has("--fake-drive") || cfg!(debug_assertions))
+}
+
 fn main() {
-    let host: Shared = Arc::new(Mutex::new(Host::demo(std::env::temp_dir().join("insert-disc-demo"))));
+    let host: Shared = Arc::new(Mutex::new(build_host()));
     let ticker = host.clone();
     std::thread::spawn(move || loop {
         std::thread::sleep(Duration::from_millis(50));
