@@ -101,3 +101,22 @@ fn corrupt_catalog_is_reported_and_left_untouched() {
 fn demo_refuses_to_wipe_a_folder_that_is_not_a_demo_folder() {
     let _ = Host::demo(std::env::temp_dir().join("InsertDisc"));
 }
+
+#[test]
+fn slow_drive_is_visible_through_the_json_api_and_the_ui_keeps_responding() {
+    let dir = temp("slow");
+    let mut h = Host::demo(std::env::temp_dir().join(format!("insert-disc-slow-{}", std::process::id())));
+    h.dev(&json!({ "cmd": "op_delay", "ms": 400 })).unwrap();
+    assert_eq!(h.dev_state()["op_delay_ms"], 400);
+    h.intent(&json!({ "type": "add_game" })).unwrap();
+    h.dev(&json!({ "cmd": "insert", "what": "blank_cdrw" })).unwrap();
+    assert_eq!(snap(&mut h)["state"], "REG_READING");
+    assert!(h.intent(&json!({ "type": "options", "game_id": uuid_zero() })).unwrap().get("ignored").is_some()); // responde durante a leitura
+    std::thread::sleep(Duration::from_millis(500));
+    assert_eq!(snap(&mut h)["state"], "REG_CHOOSE_GAME");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+fn uuid_zero() -> String {
+    "00000000-0000-0000-0000-000000000000".into()
+}

@@ -212,6 +212,7 @@ impl Host {
             "has_media": self.app.drive().has_media(),
             "media_present": self.app.media_present(),
             "armed": self.app.armed(),
+            "op_delay_ms": self.app.drive().op_delay_ms(),
             "launched": *self.launcher.log.lock().unwrap(),
             "caps": {
                 "tray_open": caps.tray_open == Tri::Yes, "eject": caps.eject == Tri::Yes,
@@ -234,6 +235,7 @@ impl Host {
                 self.demo.as_ref().ok_or("sem modo demonstração")?.insert(self.app.drive_mut(), &what)?;
             }
             "remove" => self.app.drive_mut().remove_media(),
+            "op_delay" => self.app.drive_mut().set_op_delay_ms(v["ms"].as_u64().unwrap_or(0).min(60_000)),
             "duplicate" => self.app.drive_mut().inject_duplicate_arrival(),
             "disconnect" => self.app.drive_mut().disconnect(),
             "reconnect" => self.app.drive_mut().reconnect(),

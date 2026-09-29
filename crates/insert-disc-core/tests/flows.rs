@@ -740,3 +740,83 @@ fn update_game_edits_kind_fields_with_the_creation_rules() {
     }
     assert_eq!(e.app.catalog, before);
 }
+
+// ---------- A5: operações assíncronas do drive ----------
+
+#[test]
+fn a5_slow_drive_shows_reading_then_burning_with_progress_then_verifying() {
+    let mut e = env();
+    e.app.drive_mut().set_op_delay_ms(1000);
+
+    // leitura de identificação: READING dura até o resultado chegar
+    e.select(e.x, 0);
+    e.app.drive_mut().insert_iso(e.x_iso.clone());
+    e.app.pump(10);
+    assert_eq!(e.name(), "READING");
+    e.app.pump(500);
+    assert_eq!(e.name(), "READING");
+    e.app.pump(1100);
+    assert_eq!(e.name(), "IDENTIFIED");
+    e.app.pump(1800);
+    assert_eq!(e.name(), "LAUNCHING");
+    e.app.pump(6000); // fim do loading mínimo
+
+    // cadastro: leitura do virgem (REG_READING) -> gravação com progresso -> verificação -> pronto
+    e.app.dispatch(Intent::AddGame, 6100).unwrap();
+    e.app.drive_mut().remove_media();
+    e.app.drive_mut().insert_blank_cdrw();
+    e.app.pump(6101);
+    assert_eq!(e.name(), "REG_READING");
+    e.app.pump(7200);
+    assert_eq!(e.name(), "REG_CHOOSE_GAME");
+    e.app.dispatch(Intent::CreateGame(NewGame { name: "Portal 2".into(), kind: GameKind::Steam { app_id: 620 } }), 7300).unwrap();
+    e.act(Action::Continue, 7400);
+    assert_eq!(e.name(), "BURNING");
+    assert_eq!(e.app.snapshot().progress, Some(0));
+    e.app.pump(7900);
+    assert_eq!(e.name(), "BURNING");
+    assert_eq!(e.app.snapshot().progress, Some(50));
+    e.app.pump(8500); // gravação termina e a releitura (VERIFYING) começa
+    assert_eq!(e.name(), "VERIFYING");
+    e.app.pump(9600);
+    assert_eq!(e.name(), "BURN_DONE");
+}
+
+#[test]
+fn a5_removing_the_disc_or_going_back_during_a_read_cancels_it() {
+    let mut e = env();
+    e.app.drive_mut().set_op_delay_ms(1000);
+    e.select(e.x, 0);
+    e.app.drive_mut().insert_iso(e.x_iso.clone());
+    e.app.pump(10);
+    assert_eq!(e.name(), "READING");
+    e.app.drive_mut().remove_media();
+    e.app.pump(20);
+    assert_eq!(e.name(), "WAITING_DISC");
+    e.app.pump(2000);
+    assert_eq!(e.name(), "WAITING_DISC", "resultado tardio é descartado");
+
+    e.app.drive_mut().insert_iso(e.x_iso.clone());
+    e.app.pump(2100);
+    assert_eq!(e.name(), "READING");
+    e.app.dispatch(Intent::Back, 2200).unwrap();
+    e.app.pump(4000);
+    assert_eq!(e.name(), "LIBRARY");
+    assert!(e.launches().is_empty());
+}
+
+#[test]
+fn a5_pulling_the_disc_during_a_burn_fails_it_as_drive_removed() {
+    let mut e = env();
+    e.app.dispatch(Intent::AddGame, 0).unwrap();
+    e.app.drive_mut().insert_blank_cdr();
+    e.app.pump(1);
+    add_steam_game(&mut e, "Hades", 1, 2);
+    e.app.drive_mut().set_op_delay_ms(1000);
+    e.act(Action::Continue, 3);
+    e.act(Action::Burn, 4); // aviso de CD-R
+    assert_eq!(e.name(), "BURNING");
+    e.app.drive_mut().remove_media();
+    e.app.pump(1500);
+    assert!(matches!(e.app.state(), State::BurnFailed { reason: BurnFailure::DriveRemoved, .. }), "{:?}", e.app.state());
+}

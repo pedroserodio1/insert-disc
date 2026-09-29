@@ -1,8 +1,9 @@
 //! Máquina de estados + orquestração (docs/UX-STATES.md, docs/UI-CONTRACT.md).
 //!
 //! Tudo é síncrono e determinístico: o tempo entra como `now` (ms) em `dispatch`/`pump`.
-//! Em produção, `read_media`/`burn`/`erase` rodam numa thread e devolvem o resultado por
-//! `pump`; aqui as etapas transitórias (`Reading`, `Burning`, `Verifying`) duram uma chamada.
+//! Leitura, gravação e apagamento são operações assíncronas do drive (`start_op`/`poll_ops`): o
+//! `App` guarda o contexto em `Pending` e continua quando `pump` recebe o resultado. O drive falso
+//! sem atraso conclui na mesma chamada, o que mantém os testes determinísticos.
 
 use std::path::PathBuf;
 
@@ -75,6 +76,35 @@ pub enum State {
     BurnDone { game: GameId },
     BurnFailed { game: Option<GameId>, label: Option<String>, reason: BurnFailure, cdrw: bool },
     RegRejected { game: Option<GameId>, reason: RegRejectReason },
+    /// Lendo o disco que chegou durante o cadastro (a leitura é assíncrona, A5).
+    RegReading { game: Option<GameId> },
+}
+
+/// O que fazer com o resultado de uma leitura quando ela terminar.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ReadThen {
+    AutoInsert,
+    Identify(GameId),
+    Reg(Option<GameId>),
+}
+
+#[derive(Debug, Clone)]
+struct BurnCtx {
+    game: GameId,
+    label: String,
+    disc_id: DiscId,
+    cdrw: bool,
+    physical: Physical,
+}
+
+/// Operação do drive em andamento e o contexto para continuar quando terminar.
+#[derive(Debug, Clone)]
+enum Pending {
+    Read(ReadThen),
+    Erase { game: Option<GameId>, label: Option<String>, old: Option<DiscId> },
+    Burn(BurnCtx),
+    /// Releitura do disco gravado para conferir o `disc_id`.
+    Verify(BurnCtx),
 }
 
 impl State {
@@ -107,6 +137,7 @@ impl State {
             State::BurnDone { .. } => "BURN_DONE",
             State::BurnFailed { .. } => "BURN_FAILED",
             State::RegRejected { .. } => "REG_REJECTED",
+            State::RegReading { .. } => "REG_READING",
         }
     }
 }
@@ -205,6 +236,7 @@ pub struct App<D: DriveBackend, L: Launcher> {
     pub(crate) toast: Option<(u64, Toast)>,
     toast_seq: u64,
     pub(crate) progress: Option<u8>,
+    pending: Option<Pending>,
     pub persist_error: Option<String>,
 }
 
@@ -234,6 +266,7 @@ impl<D: DriveBackend, L: Launcher> App<D, L> {
             toast: None,
             toast_seq: 0,
             progress: None,
+            pending: None,
             persist_error: None,
         };
         app.select_drive();
@@ -334,13 +367,63 @@ impl<D: DriveBackend, L: Launcher> App<D, L> {
         if self.caps().tray_open == Tri::Yes { TrayHint::Opening } else { TrayHint::Manual }
     }
 
-    fn read(&mut self) -> MediaInfo {
-        let m = match self.drive_id.clone() {
-            Some(d) => self.drive.read_media(&d).unwrap_or_else(|_| MediaInfo::unreadable()),
-            None => MediaInfo::unreadable(),
-        };
-        self.last_media = Some(m.clone());
-        m
+    // ---------- operações assíncronas do drive (A5) ----------
+
+    /// Inicia a operação e, se o backend já a concluiu (drive falso sem atraso), continua na hora.
+    fn begin(&mut self, op: DriveOp, pending: Pending) {
+        match self.drive_id.clone() {
+            Some(d) => {
+                self.pending = Some(pending);
+                self.drive.start_op(&d, op, self.now);
+                self.drain_ops();
+            }
+            None if matches!(pending, Pending::Read(_)) => {
+                self.pending = Some(pending);
+                self.complete(OpResult::Read(Err(DriveError::Removed)));
+            }
+            None => {}
+        }
+    }
+
+    fn drain_ops(&mut self) {
+        loop {
+            let mut finished = false;
+            for u in self.drive.poll_ops(self.now) {
+                match u {
+                    OpUpdate::Progress(p) => {
+                        if matches!(self.pending, Some(Pending::Burn(_) | Pending::Erase { .. })) {
+                            self.progress = Some(p);
+                        }
+                    }
+                    OpUpdate::Done(r) => {
+                        finished = true;
+                        self.complete(r);
+                    }
+                }
+            }
+            if !finished {
+                return; // continuar só se o fim de uma operação pôde ter iniciado outra
+            }
+        }
+    }
+
+    fn complete(&mut self, r: OpResult) {
+        let Some(p) = self.pending.take() else { return };
+        match (p, r) {
+            (Pending::Read(then), OpResult::Read(res)) => {
+                let m = res.unwrap_or_else(|_| MediaInfo::unreadable());
+                self.last_media = Some(m.clone());
+                match then {
+                    ReadThen::AutoInsert => self.after_auto_read(&m),
+                    ReadThen::Identify(g) => self.after_identify(g, &m),
+                    ReadThen::Reg(g) => self.after_reg_read(g, &m),
+                }
+            }
+            (Pending::Erase { game, label, old }, OpResult::Erase(res)) => self.after_erase(game, label, old, res),
+            (Pending::Burn(b), OpResult::Burn(res)) => self.after_burn(b, res),
+            (Pending::Verify(b), OpResult::Read(res)) => self.after_verify(b, res),
+            _ => {}
+        }
     }
 
     fn persist(&mut self) {
@@ -360,6 +443,9 @@ impl<D: DriveBackend, L: Launcher> App<D, L> {
         self.now = now;
         for ev in self.drive.poll_events() {
             self.on_event(ev);
+        }
+        if self.pending.is_some() {
+            self.drain_ops();
         }
         match self.state.clone() {
             State::Identified { game } if now.saturating_sub(self.ficha_since) >= FICHA_MIN_MS => self.start_launch(game),
@@ -389,10 +475,13 @@ impl<D: DriveBackend, L: Launcher> App<D, L> {
             DriveEvent::MediaRemoved => {
                 self.media_present = false;
                 self.armed = false;
+                if matches!(self.pending, Some(Pending::Read(_))) {
+                    self.pending = None; // leitura de um disco que já saiu
+                }
                 let tray = self.tray_after_removal();
                 self.state = match self.state.clone() {
                     State::Reading { game } | State::Identified { game } | State::Rejected { game, .. } | State::AdoptConfirm { game, .. } => State::WaitingDisc { game, tray },
-                    State::RegRejected { game, .. } | State::RegEraseConfirm { game, .. } => State::RegInsert { game, tray },
+                    State::RegReading { game } | State::RegRejected { game, .. } | State::RegEraseConfirm { game, .. } => State::RegInsert { game, tray },
                     s => s,
                 };
             }
@@ -406,6 +495,7 @@ impl<D: DriveBackend, L: Launcher> App<D, L> {
                 self.select_drive();
                 self.media_present = false;
                 self.armed = false;
+                self.pending = None;
                 self.on_drive_removed();
             }
         }
@@ -419,7 +509,7 @@ impl<D: DriveBackend, L: Launcher> App<D, L> {
                 self.set_toast(Toast::DriveRemoved);
                 self.state.clone()
             }
-            NoDiscYet { .. } | WaitingDisc { .. } | Reading { .. } | Identified { .. } | Rejected { .. } | AdoptConfirm { .. } | RegInsert { .. }
+            NoDiscYet { .. } | WaitingDisc { .. } | Reading { .. } | Identified { .. } | Rejected { .. } | AdoptConfirm { .. } | RegInsert { .. } | RegReading { .. }
             | RegEraseConfirm { .. } | RegChooseGame | RegLabelPreview { .. } | RegCdrWarning { .. } | RegRejected { .. } => DriveProblem { reason: ProblemReason::Removed },
             Erasing { game, label, .. } => BurnFailed { game, label, reason: BurnFailure::DriveRemoved, cdrw: true },
             Burning { game, label } => BurnFailed { game: Some(game), label: Some(label), reason: BurnFailure::DriveRemoved, cdrw: self.is_cdrw() },
@@ -435,8 +525,14 @@ impl<D: DriveBackend, L: Launcher> App<D, L> {
     // ---------- jogar ----------
 
     fn on_auto_insert(&mut self) {
-        let m = self.read();
-        let class = classify(&m, &self.catalog, None);
+        self.begin(DriveOp::Read, Pending::Read(ReadThen::AutoInsert));
+    }
+
+    fn after_auto_read(&mut self, m: &MediaInfo) {
+        if self.state != State::Library {
+            return; // o usuário já foi para outra tela durante a leitura
+        }
+        let class = classify(m, &self.catalog, None);
         match class {
             MediaClass::Known { game } => match self.catalog.settings.on_disc_insert {
                 OnDiscInsert::Focus => {
@@ -453,8 +549,14 @@ impl<D: DriveBackend, L: Launcher> App<D, L> {
 
     fn identify(&mut self, game: GameId) {
         self.state = State::Reading { game };
-        let m = self.read();
-        let class = classify(&m, &self.catalog, Some(game));
+        self.begin(DriveOp::Read, Pending::Read(ReadThen::Identify(game)));
+    }
+
+    fn after_identify(&mut self, game: GameId, m: &MediaInfo) {
+        if self.state != (State::Reading { game }) {
+            return;
+        }
+        let class = classify(m, &self.catalog, Some(game));
         if class == MediaClass::Match {
             self.ficha_since = self.now;
             self.state = State::Identified { game };
@@ -508,7 +610,15 @@ impl<D: DriveBackend, L: Launcher> App<D, L> {
     }
 
     fn reg_read(&mut self, game: Option<GameId>) {
-        let m = self.read();
+        self.state = State::RegReading { game };
+        self.begin(DriveOp::Read, Pending::Read(ReadThen::Reg(game)));
+    }
+
+    fn after_reg_read(&mut self, game: Option<GameId>, m: &MediaInfo) {
+        if self.state != (State::RegReading { game }) {
+            return;
+        }
+        let m = m.clone();
         let caps = self.caps();
         let reject = |reason| State::RegRejected { game, reason };
         let has_ini = m.game_ini.is_some();
@@ -538,9 +648,15 @@ impl<D: DriveBackend, L: Launcher> App<D, L> {
 
     fn do_erase(&mut self, game: Option<GameId>, label: Option<String>, old: Option<DiscId>) {
         self.state = State::Erasing { game, label: label.clone(), old_disc: old };
-        let Some(d) = self.drive_id.clone() else { return };
-        let mut ignore = |_: u8| {};
-        match self.drive.erase(&d, true, &mut ignore) {
+        self.progress = Some(0);
+        self.begin(DriveOp::Erase { quick: true }, Pending::Erase { game, label, old });
+    }
+
+    fn after_erase(&mut self, game: Option<GameId>, label: Option<String>, old: Option<DiscId>, res: Result<(), DriveError>) {
+        if !matches!(self.state, State::Erasing { .. }) {
+            return;
+        }
+        match res {
             Ok(()) => {
                 // Só agora a chave antiga deixa de existir (BURNING.md).
                 if let Some(o) = old {
@@ -559,26 +675,44 @@ impl<D: DriveBackend, L: Launcher> App<D, L> {
 
     fn do_burn(&mut self, game: GameId, label: String) {
         let Some(name) = self.catalog.game(game).map(|g| g.name.clone()) else { return };
-        let Some(d) = self.drive_id.clone() else { return };
+        if self.drive_id.is_none() {
+            return;
+        }
         let physical = self.last_media.as_ref().map_or(Physical::Unknown, |m| m.physical);
         let cdrw = physical == Physical::CdRw;
         let disc_id = Uuid::new_v4();
         let spec = DiscImageSpec { label: label.clone(), game_ini: gameini::write(disc_id, &name) };
 
         self.state = State::Burning { game, label: label.clone() };
-        let mut pct = 0u8;
-        let res = self.drive.burn(&d, &spec, &mut |p| pct = p);
-        self.progress = Some(pct);
-        if let Err(e) = res {
-            let reason = if e == DriveError::Removed { BurnFailure::DriveRemoved } else { BurnFailure::WriteError };
-            self.state = State::BurnFailed { game: Some(game), label: Some(label), reason, cdrw };
+        self.progress = Some(0);
+        self.begin(DriveOp::Burn(spec), Pending::Burn(BurnCtx { game, label, disc_id, cdrw, physical }));
+    }
+
+    fn after_burn(&mut self, b: BurnCtx, res: Result<(), DriveError>) {
+        if !matches!(self.state, State::Burning { .. }) {
             return;
         }
+        if let Err(e) = res {
+            let reason = if e == DriveError::Removed { BurnFailure::DriveRemoved } else { BurnFailure::WriteError };
+            self.state = State::BurnFailed { game: Some(b.game), label: Some(b.label), reason, cdrw: b.cdrw };
+            return;
+        }
+        self.state = State::Verifying { game: b.game };
+        self.begin(DriveOp::Read, Pending::Verify(b));
+    }
 
-        self.state = State::Verifying { game };
-        let verified = self.drive.read_media(&d).ok().and_then(|m| m.ini()).is_some_and(|i| i.id == disc_id);
+    fn after_verify(&mut self, b: BurnCtx, res: Result<MediaInfo, DriveError>) {
+        if !matches!(self.state, State::Verifying { .. }) {
+            return;
+        }
+        let BurnCtx { game, label, disc_id, cdrw, physical } = b;
+        let verified = match &res {
+            Ok(m) => m.ini().is_some_and(|i| i.id == disc_id),
+            Err(_) => false,
+        };
         if !verified {
-            self.state = State::BurnFailed { game: Some(game), label: Some(label), reason: BurnFailure::VerifyMismatch, cdrw };
+            let reason = if res == Err(DriveError::Removed) { BurnFailure::DriveRemoved } else { BurnFailure::VerifyMismatch };
+            self.state = State::BurnFailed { game: Some(game), label: Some(label), reason, cdrw };
             return;
         }
         let media = if self.drive.kind() == BackendKind::Fake {
@@ -706,9 +840,12 @@ impl<D: DriveBackend, L: Launcher> App<D, L> {
 
     fn back(&mut self) -> Result<(), IntentError> {
         use State::*;
+        if matches!(self.state, Reading { .. } | RegReading { .. }) {
+            self.pending = None; // desistiu da leitura em curso
+        }
         let next = match self.state.clone() {
             NoDiscYet { .. } | WaitingDisc { .. } | Reading { .. } | Rejected { .. } | LaunchError { .. } | GameOptions { .. } | Settings | DriveProblem { .. }
-            | RegInsert { .. } | RegChooseGame | BurnFailed { .. } | RegRejected { .. } => Library,
+            | RegInsert { .. } | RegReading { .. } | RegChooseGame | BurnFailed { .. } | RegRejected { .. } => Library,
             BurnDone { game } => {
                 self.focus_hint = Some(game);
                 Library

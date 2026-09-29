@@ -109,6 +109,29 @@ pub struct DiscImageSpec {
     pub game_ini: String,
 }
 
+/// Operação longa do drive (A5). Backends reais a executam numa thread própria e devolvem o
+/// resultado por `poll_ops`; a UI continua respondendo (o `App` nunca bloqueia).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DriveOp {
+    Read,
+    Burn(DiscImageSpec),
+    Erase { quick: bool },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum OpResult {
+    Read(Result<MediaInfo, DriveError>),
+    Burn(Result<(), DriveError>),
+    Erase(Result<(), DriveError>),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum OpUpdate {
+    /// Progresso 0..=100 da gravação ou do apagamento em curso.
+    Progress(u8),
+    Done(OpResult),
+}
+
 pub trait DriveBackend {
     fn kind(&self) -> BackendKind;
     fn list_drives(&mut self) -> Vec<DriveInfo>;
@@ -120,6 +143,10 @@ pub trait DriveBackend {
     fn read_media(&mut self, drive: &str) -> Result<MediaInfo, DriveError>;
     fn burn(&mut self, drive: &str, spec: &DiscImageSpec, progress: &mut dyn FnMut(u8)) -> Result<(), DriveError>;
     fn erase(&mut self, drive: &str, quick: bool, progress: &mut dyn FnMut(u8)) -> Result<(), DriveError>;
+    /// Inicia uma operação (uma por vez). Não bloqueia: o resultado chega por `poll_ops`.
+    fn start_op(&mut self, drive: &str, op: DriveOp, now: u64);
+    /// Progresso e resultados desde a última chamada (`now` em ms, para backends simulados).
+    fn poll_ops(&mut self, now: u64) -> Vec<OpUpdate>;
     /// Eventos acumulados desde a última chamada.
     fn poll_events(&mut self) -> Vec<DriveEvent>;
 }

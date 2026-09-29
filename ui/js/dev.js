@@ -35,6 +35,7 @@ export function mountDevPanel() {
       h('h3', {}, 'Ações do drive'),
       btn('Remover disco', { cmd: 'remove' }), btn('Evento duplicado', { cmd: 'duplicate' }), btn('Desconectar', { cmd: 'disconnect' }), btn('Reconectar', { cmd: 'reconnect' }),
       h('h3', {}, 'Falhas'), flag('fail_burn', 'falha ao gravar'), flag('fail_erase', 'falha ao apagar'), flag('fail_open_tray', 'gaveta travada'),
+      h('h3', {}, 'Duração das operações'), btn('instantâneo', { cmd: 'op_delay', ms: 0 }), btn('3 s', { cmd: 'op_delay', ms: 3000 }), btn('8 s', { cmd: 'op_delay', ms: 8000 }),
       h('h3', {}, 'Capacidades'), cap('tray_open'), cap('eject'), cap('write_cdr'), cap('write_cdrw'),
       h('h3', {}, 'Lançador'),
       btn('ok', { cmd: 'launcher_fail', reason: null }), btn('sem Steam', { cmd: 'launcher_fail', reason: 'steam_missing' }), btn('não achou', { cmd: 'launcher_fail', reason: 'not_found' }),

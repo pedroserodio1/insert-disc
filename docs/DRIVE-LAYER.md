@@ -16,6 +16,7 @@ A assinatura abaixo é conceitual (operações e dados), não código.
 | `read_media` | drive | `MediaInfo` | Com timeout. Inclui a leitura do `GAME.INI` (só na raiz, com limite rígido de bytes); não há outra operação de leitura de arquivo exposta ao núcleo. |
 | `burn` | drive, `DiscImageSpec` | stream de `BurnProgress` → ok \| erro | [BURNING](BURNING.md) |
 | `erase` | drive, `quick` \| `full` | stream de progresso → ok \| erro | Só para CD-RW |
+| `start_op` / `poll_ops` | drive, `DriveOp` (`Read`, `Burn`, `Erase`); `now` | `OpUpdate` (`Progress`, `Done`) | **Como o núcleo chama `read_media`, `burn` e `erase`** (A5): inicia sem bloquear e recebe progresso e resultado por `pump`. Backend real: uma thread por operação (uma por vez) e um canal; o drive falso simula com atraso configurável (`set_op_delay_ms`). Tirar o disco no meio faz a operação falhar; sair de `READING` descarta o resultado. |
 
 ### Tipos
 

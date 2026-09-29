@@ -24,7 +24,15 @@ enum Slot {
     DirtyCdrw,
 }
 
+struct PendingOp {
+    result: OpResult,
+    reports_progress: bool,
+    start: u64,
+}
+
 pub struct FakeIsoDrive {
+    pending: Option<PendingOp>,
+    op_delay_ms: u64,
     caps: Capabilities,
     present: bool,
     slot: Option<Slot>,
@@ -39,6 +47,8 @@ pub struct FakeIsoDrive {
 impl FakeIsoDrive {
     pub fn new(out_dir: impl Into<PathBuf>) -> Self {
         FakeIsoDrive {
+            pending: None,
+            op_delay_ms: 0,
             caps: Capabilities::ALL,
             present: true,
             slot: None,
@@ -56,6 +66,23 @@ impl FakeIsoDrive {
     }
     pub fn set_capabilities(&mut self, caps: Capabilities) {
         self.caps = caps;
+    }
+    /// Duração simulada de leitura, gravação e apagamento (0 = instantâneo, o padrão dos testes).
+    pub fn set_op_delay_ms(&mut self, ms: u64) {
+        self.op_delay_ms = ms;
+    }
+    pub fn op_delay_ms(&self) -> u64 {
+        self.op_delay_ms
+    }
+    /// Tirar o disco ou o drive no meio de uma operação a faz falhar.
+    fn abort_pending(&mut self) {
+        if let Some(p) = &mut self.pending {
+            p.result = match p.result {
+                OpResult::Read(_) => OpResult::Read(Err(DriveError::Removed)),
+                OpResult::Burn(_) => OpResult::Burn(Err(DriveError::Removed)),
+                OpResult::Erase(_) => OpResult::Erase(Err(DriveError::Removed)),
+            };
+        }
     }
     pub fn set_fail_burn(&mut self, v: bool) {
         self.fail_burn = v;
@@ -99,6 +126,7 @@ impl FakeIsoDrive {
     /// Remoção pelo usuário (puxar o disco).
     pub fn remove_media(&mut self) {
         if self.slot.take().is_some() {
+            self.abort_pending();
             self.events.push(DriveEvent::MediaRemoved);
         }
     }
@@ -109,6 +137,7 @@ impl FakeIsoDrive {
     pub fn disconnect(&mut self) {
         self.present = false;
         self.slot = None;
+        self.abort_pending();
         self.events.push(DriveEvent::DriveRemoved);
     }
     pub fn reconnect(&mut self) {
@@ -232,6 +261,33 @@ impl DriveBackend for FakeIsoDrive {
         progress(100);
         self.slot = Some(Slot::Blank(Physical::CdRw));
         Ok(())
+    }
+
+    /// O resultado é calculado na hora (como antes) e só entregue depois de `op_delay_ms`,
+    /// com progresso proporcional ao tempo; atraso 0 entrega no mesmo `poll_ops`.
+    fn start_op(&mut self, drive: &str, op: DriveOp, now: u64) {
+        let mut sink = |_: u8| {};
+        let (result, reports_progress) = match op {
+            DriveOp::Read => (OpResult::Read(self.read_media(drive)), false),
+            DriveOp::Burn(spec) => (OpResult::Burn(self.burn(drive, &spec, &mut sink)), true),
+            DriveOp::Erase { quick } => (OpResult::Erase(self.erase(drive, quick, &mut sink)), true),
+        };
+        self.pending = Some(PendingOp { result, reports_progress, start: now });
+    }
+
+    fn poll_ops(&mut self, now: u64) -> Vec<OpUpdate> {
+        let Some(p) = &self.pending else { return vec![] };
+        let elapsed = now.saturating_sub(p.start);
+        if elapsed < self.op_delay_ms {
+            return if p.reports_progress { vec![OpUpdate::Progress((elapsed * 100 / self.op_delay_ms) as u8)] } else { vec![] };
+        }
+        let p = self.pending.take().expect("checado acima");
+        let mut out = Vec::new();
+        if p.reports_progress && matches!(p.result, OpResult::Burn(Ok(())) | OpResult::Erase(Ok(()))) {
+            out.push(OpUpdate::Progress(100));
+        }
+        out.push(OpUpdate::Done(p.result));
+        out
     }
 
     fn poll_events(&mut self) -> Vec<DriveEvent> {

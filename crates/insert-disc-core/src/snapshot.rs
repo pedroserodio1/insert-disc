@@ -150,7 +150,7 @@ fn state_game(s: &State) -> Option<GameId> {
         NoDiscYet { game } | WaitingDisc { game, .. } | Reading { game } | Identified { game } | Rejected { game, .. } | AdoptConfirm { game, .. }
         | Launching { game, .. } | LaunchError { game, .. } | GameOptions { game } | RemoveConfirm { game } | RegLabelPreview { game, .. }
         | RegCdrWarning { game, .. } | Burning { game, .. } | Verifying { game } | BurnDone { game } => Some(*game),
-        RegInsert { game, .. } | RegEraseConfirm { game, .. } | Erasing { game, .. } | BurnFailed { game, .. } | RegRejected { game, .. } => *game,
+        RegInsert { game, .. } | RegReading { game } | RegEraseConfirm { game, .. } | Erasing { game, .. } | BurnFailed { game, .. } | RegRejected { game, .. } => *game,
         _ => None,
     }
 }
