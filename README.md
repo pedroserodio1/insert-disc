@@ -70,6 +70,6 @@ Convenção usada em todos os documentos:
 
 ## Contribuindo
 
-Salvo indicação explícita em contrário, qualquer contribuição enviada intencionalmente para inclusão neste projeto, conforme definido na licença Apache-2.0, é licenciada como MIT OR Apache-2.0, sem termos ou condições adicionais.
+Veja o [CONTRIBUTING](CONTRIBUTING.md) (como rodar, testar e o que um PR deve trazer). Salvo indicação explícita em contrário, qualquer contribuição enviada intencionalmente para inclusão neste projeto, conforme definido na licença Apache-2.0, é licenciada como MIT OR Apache-2.0, sem termos ou condições adicionais.
 
-Problemas de segurança: veja [SECURITY](docs/SECURITY.md#reportar-vulnerabilidades).
+Problemas de segurança: veja a [política de segurança](SECURITY.md) e o [modelo de ameaças](docs/SECURITY.md#reportar-vulnerabilidades).

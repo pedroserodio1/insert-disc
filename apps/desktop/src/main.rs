@@ -90,6 +90,13 @@ fn main() {
     });
 
     tauri::Builder::default()
+        // instância única (Q22): abrir de novo traz a janela existente para a frente
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            if let Some(w) = app.get_webview_window("main") {
+                let _ = w.unminimize();
+                let _ = w.set_focus();
+            }
+        }))
         .manage(host)
         // capas salvas: só nomes gerados pelo app (`Host::cover_file` valida), nunca caminhos
         .register_uri_scheme_protocol("cover", |ctx, request| {

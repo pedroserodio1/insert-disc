@@ -6,6 +6,7 @@ pub mod anydrive;
 pub mod covers;
 pub mod demo;
 pub mod launcher;
+pub mod log;
 pub mod steam;
 pub mod windrive;
 
@@ -58,6 +59,8 @@ pub struct Host {
     demo: Option<demo::Demo>,
     /// Pasta das capas salvas.
     covers_dir: Option<std::path::PathBuf>,
+    logger: Option<log::Logger>,
+    last_state: &'static str,
 }
 
 fn uuid_of(v: &Value, key: &str) -> Result<Uuid, String> {
@@ -157,7 +160,7 @@ impl Host {
         let launcher = LogLauncher::default();
         let mut drive = FakeIsoDrive::new(dir.join("burned"));
         demo.insert_default(&mut drive);
-        Host { app: App::boot(Ok(catalog), None, AnyDrive::Fake(drive), launcher.clone(), 0), launcher, start: Instant::now(), demo: Some(demo), covers_dir: Some(dir.join("covers")) }
+        Host { app: App::boot(Ok(catalog), None, AnyDrive::Fake(drive), launcher.clone(), 0), launcher, start: Instant::now(), demo: Some(demo), covers_dir: Some(dir.join("covers")), logger: None, last_state: "" }
     }
 
     /// Modo real: catálogo em `data_dir/catalog.json` (ausente = estante vazia; corrompido =
@@ -176,7 +179,9 @@ impl Host {
             }
         };
         let app = App::boot(Catalog::load(&path), Some(path), drive, launcher.clone(), 0);
-        Host { app, launcher, start: Instant::now(), demo: None, covers_dir: Some(dir.join("covers")) }
+        let mut logger = log::Logger::open(dir.join("logs").join("insert-disc.log"), std::env::var("INSERT_DISC_LOG").is_ok_and(|v| v == "debug"));
+        logger.info(&format!("início: versão {} drive={mode:?} lançador_real={real_launch}", env!("CARGO_PKG_VERSION")));
+        Host { app, launcher, start: Instant::now(), demo: None, covers_dir: Some(dir.join("covers")), logger: Some(logger), last_state: "" }
     }
 
     fn now(&self) -> u64 {
@@ -186,6 +191,31 @@ impl Host {
     pub fn tick(&mut self) {
         let now = self.now();
         self.app.pump(now);
+        self.log_state_change();
+    }
+
+    /// Uma linha por mudança de estado (nomes e classes, nunca caminhos); a requisição de
+    /// lançamento, que tem caminho de executável, só em depuração.
+    fn log_state_change(&mut self) {
+        let name = self.app.state().name();
+        if name == self.last_state {
+            return;
+        }
+        self.last_state = name;
+        let Some(l) = &mut self.logger else { return };
+        match self.app.state() {
+            State::LaunchError { reason, .. } => l.info(&format!("estado {name}: {}", reason.key())),
+            State::Launching { .. } => {
+                l.info(&format!("estado {name}"));
+                if let Some(req) = self.launcher.log.lock().unwrap().last() {
+                    l.debug(&format!("lançamento: {req}"));
+                }
+            }
+            _ => l.info(&format!("estado {name}")),
+        }
+        if let Some(e) = &self.app.persist_error {
+            l.info(&format!("erro ao salvar o catálogo: {e}"));
+        }
     }
 
     pub fn snapshot_json(&mut self) -> String {

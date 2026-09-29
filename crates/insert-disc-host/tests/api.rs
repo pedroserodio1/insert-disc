@@ -157,3 +157,18 @@ fn cover_import_saves_a_clean_jpeg_sets_the_spine_and_replaces_the_old_file() {
     assert!(h.set_cover_json(&json!({ "game_id": uuid_zero(), "data": png_b64(8, 8, [1, 2, 3]) })).is_err());
     assert!(h.cover_file("../catalog.json").is_none());
 }
+
+#[test]
+fn state_changes_are_logged_without_paths_by_default() {
+    let dir = temp("log");
+    let _ = std::fs::remove_dir_all(&dir);
+    let mut h = Host::open(&dir, DriveMode::Fake, false);
+    h.app.drive_mut().fake_mut().unwrap().insert_blank_cdrw();
+    h.intent(&json!({ "type": "add_game" })).unwrap();
+    h.tick();
+    h.tick();
+    let text = std::fs::read_to_string(dir.join("logs").join("insert-disc.log")).unwrap();
+    assert!(text.contains("INFO início: versão") && text.contains("INFO estado REG_"), "{text}");
+    assert!(!text.contains("DEBUG"));
+    let _ = std::fs::remove_dir_all(&dir);
+}

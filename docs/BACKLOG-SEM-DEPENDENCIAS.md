@@ -28,7 +28,7 @@ Legenda: **S** pequeno (horas), **M** médio, **G** grande.
 | A3 ✅ (capa em B2) | **Importar da Steam** no "Novo jogo da Steam": lista dos instalados (o código do [W6](RISKS-AND-SPIKES.md#w6-integração-com-a-steam) vira módulo, com filtro de ferramentas), escolha por lista em vez de digitar o AppID | O AppID à mão é inviável | Os 26 jogos deste PC aparecem; escolher um cria o jogo com nome e AppID; parser do VDF com testes (formato novo e antigo) | M |
 | A4 ✅ | **Edição completa do jogo**: hoje só dá para renomear; faltam executável, argumentos, pasta e elevação dos jogos `custom` | Sem isso um erro de digitação obriga apagar o jogo | Editar cada campo com a mesma validação da criação; `.bat`/`.cmd` com aviso ([Q13](OPEN-QUESTIONS.md#q13-bat-e-cmd-como-executável)) | S |
 | A5 ✅ | **Operações do drive assíncronas**: `read_media`, `burn` e `erase` rodam numa thread e devolvem o resultado por `pump`; hoje são síncronas | Os estados `READING`, `BURNING` e `VERIFYING` duram uma chamada e **a UI nunca os mostra**; o progresso da gravação nunca aparece | O drive falso tem atraso configurável; a UI mostra "lendo" e o progresso subindo; a UI continua respondendo durante a gravação | M |
-| A6 | **Instância única** ([Q22](OPEN-QUESTIONS.md#q22-instância-única)) e **log em arquivo** ([Q23](OPEN-QUESTIONS.md#q23-logs)) | Duas instâncias disputariam o mesmo drive; sem log não há como diagnosticar | Abrir de novo traz a janela existente; log rotativo sem chave de API nem caminhos fora do nível de depuração | S |
+| A6 ✅ | **Instância única** ([Q22](OPEN-QUESTIONS.md#q22-instância-única)) e **log em arquivo** ([Q23](OPEN-QUESTIONS.md#q23-logs)) | Duas instâncias disputariam o mesmo drive; sem log não há como diagnosticar | Abrir de novo traz a janela existente; log rotativo sem chave de API nem caminhos fora do nível de depuração | S |
 
 ### B. Capas
 
@@ -61,7 +61,7 @@ Legenda: **S** pequeno (horas), **M** médio, **G** grande.
 | E2 ✅ | **Script de contraste** dos tokens ([FRONTEND-DESIGN §3.1](FRONTEND-DESIGN.md#31-cor)) e checagem de que nenhum valor fora de token entrou no CSS | O CI falha se um par de cores ficar abaixo do mínimo | S |
 | E3 | **Re-medir o [W13](RISKS-AND-SPIKES.md#w13-desempenho-de-css-3d-no-webview2)** depois da correção da estante, com a janela do app visível | Números de quadros por segundo e tarefas longas registrados; ou o app desktop medido direto | S |
 | E4 | **Build local do instalador** (sem assinatura) e um workflow de release no CI que publica o artefato do Windows | O instalador instala e abre numa conta limpa; assinatura fica para o [W9](RISKS-AND-SPIKES.md#w9-empacotamento-assinatura-e-smartscreen) | M |
-| E5 | **Arquivos de projeto**: `CONTRIBUTING`, modelos de issue e de PR, política de segurança do GitHub | Presentes e linkados no README | S |
+| E5 ✅ | **Arquivos de projeto**: `CONTRIBUTING`, modelos de issue e de PR, política de segurança do GitHub | Presentes e linkados no README | S |
 | E6 ✅ | **Abrir e verificar o app desktop** (`apps/desktop`) no WebView2 | A janela sobe, a UI funciona, `Ctrl+Shift+D` mostra o painel; problemas achados viram itens aqui | S |
 
 ### E7–E11. Lacunas descobertas na revisão
