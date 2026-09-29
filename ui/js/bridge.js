@@ -13,6 +13,7 @@ export const bridge = {
   kind: tauri ? 'tauri' : 'http',
   snapshot: () => (tauri ? tauri.invoke('snapshot').then(JSON.parse) : http('GET', '/api/snapshot')),
   intent: (intent) => (tauri ? tauri.invoke('intent', { intent }) : http('POST', '/api/intent', intent)),
+  steamGames: () => (tauri ? tauri.invoke('steam_games') : http('GET', '/api/steam')),
   devState: () => (tauri ? tauri.invoke('dev_state') : http('GET', '/api/dev')),
   dev: (cmd) => (tauri ? tauri.invoke('dev', { cmd }) : http('POST', '/api/dev', cmd)),
   exportCatalog: () => (tauri ? tauri.invoke('export_catalog') : fetch('/api/export').then((r) => r.text())),

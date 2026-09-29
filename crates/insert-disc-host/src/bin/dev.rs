@@ -65,6 +65,7 @@ fn handle(host: &Arc<Mutex<Host>>, mut req: Request) {
             Err(e) => json_response(json!({ "error": e }), 400),
         },
         (Method::Get, "/api/dev") => json_response(host.lock().unwrap().dev_state(), 200),
+        (Method::Get, "/api/steam") => json_response(host.lock().unwrap().steam_games(), 200),
         (Method::Post, "/api/dev") => match host.lock().unwrap().dev(&parsed) {
             Ok(v) => json_response(v, 200),
             Err(e) => json_response(json!({ "error": e }), 400),

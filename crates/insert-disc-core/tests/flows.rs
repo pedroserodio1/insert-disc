@@ -715,3 +715,28 @@ fn changes_are_persisted_to_disk() {
     assert!(app.persist_error.is_none());
     assert_eq!(Catalog::load(&path).unwrap().settings.on_disc_insert, OnDiscInsert::Launch);
 }
+
+#[test]
+fn update_game_edits_kind_fields_with_the_creation_rules() {
+    use insert_disc_core::catalog::GameKind;
+    let mut e = env();
+    let abs = |p: &str| if cfg!(windows) { std::path::PathBuf::from(format!("C:/{p}")) } else { std::path::PathBuf::from(format!("/{p}")) };
+    let custom = |exe: &str, args: &[&str]| GameKind::Custom { executable: abs(exe), args: args.iter().map(|s| s.to_string()).collect(), working_dir: None, requires_elevation: true };
+    // só em GAME_OPTIONS
+    let upd = |name: &str, kind| Intent::UpdateGame(e.x, NewGame { name: name.into(), kind });
+    assert_eq!(e.app.dispatch(upd("Novo", custom("g.exe", &[])), 0), Err(IntentError::Ignored));
+
+    e.app.dispatch(Intent::Options(e.x), 1).unwrap();
+    e.app.dispatch(upd("  Editado ", custom("games/g.exe", &["--fullscreen"])), 2).unwrap();
+    let g = e.app.catalog.game(e.x).unwrap();
+    assert_eq!(g.name, "Editado");
+    assert_eq!(g.kind, custom("games/g.exe", &["--fullscreen"]));
+    assert_eq!(g.discs.len(), 1, "discos e capa são preservados");
+
+    // mesma validação da criação: relativo, .bat com argumentos e nome vazio são recusados sem alterar nada
+    let before = e.app.catalog.clone();
+    for bad in [upd("X", GameKind::Custom { executable: "rel.exe".into(), args: vec![], working_dir: None, requires_elevation: false }), upd("X", custom("run.bat", &["a"])), upd(" ", custom("g.exe", &[]))] {
+        assert!(matches!(e.app.dispatch(bad, 3), Err(IntentError::Invalid(_))));
+    }
+    assert_eq!(e.app.catalog, before);
+}

@@ -256,6 +256,15 @@ impl Catalog {
         Ok(())
     }
 
+    /// Edita nome e tipo (executável, argumentos etc.) com a mesma validação da criação.
+    pub fn update_game(&mut self, id: GameId, name: &str, kind: GameKind) -> Result<(), CatalogError> {
+        let g = self.games.iter_mut().find(|g| g.game_id == id).ok_or(CatalogError::NoSuchGame)?;
+        let candidate = Game { name: name.trim().to_string(), kind, ..g.clone() };
+        validate_game(&candidate)?;
+        *g = candidate;
+        Ok(())
+    }
+
     /// Ordem de exibição (Q21): alfabética, sem diferenciar maiúsculas.
     pub fn sorted_games(&self) -> Vec<&Game> {
         let mut v: Vec<&Game> = self.games.iter().collect();

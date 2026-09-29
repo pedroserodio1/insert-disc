@@ -32,6 +32,11 @@ fn import_catalog(host: State<Shared>, json: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn steam_games(host: State<Shared>) -> Value {
+    host.lock().unwrap().steam_games()
+}
+
+#[tauri::command]
 fn dev_state(host: State<Shared>) -> Value {
     host.lock().unwrap().dev_state()
 }
@@ -73,7 +78,7 @@ fn main() {
 
     tauri::Builder::default()
         .manage(host)
-        .invoke_handler(tauri::generate_handler![snapshot, intent, export_catalog, import_catalog, dev_state, dev])
+        .invoke_handler(tauri::generate_handler![snapshot, intent, export_catalog, import_catalog, steam_games, dev_state, dev])
         .run(tauri::generate_context!())
         .expect("falha ao iniciar o app");
 }

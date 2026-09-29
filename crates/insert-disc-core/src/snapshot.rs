@@ -19,6 +19,12 @@ pub struct GameView {
     pub cover: Option<String>,
     pub spine_color: Option<String>,
     pub disc_count: usize,
+    /// Campos do tipo do jogo (para a edição); vazios quando não se aplicam.
+    pub app_id: Option<u32>,
+    pub executable: Option<String>,
+    pub args: Vec<String>,
+    pub working_dir: Option<String>,
+    pub requires_elevation: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -84,16 +90,29 @@ pub struct Snapshot {
 }
 
 fn view(g: &Game) -> GameView {
+    let (kind, app_id, executable, args, working_dir, requires_elevation) = match &g.kind {
+        GameKind::Steam { app_id } => ("steam", Some(*app_id), None, Vec::new(), None, false),
+        GameKind::Custom { executable, args, working_dir, requires_elevation } => (
+            "custom",
+            None,
+            Some(executable.to_string_lossy().into_owned()),
+            args.clone(),
+            working_dir.as_ref().map(|w| w.to_string_lossy().into_owned()),
+            *requires_elevation,
+        ),
+    };
     GameView {
         game_id: g.game_id,
         name: g.name.clone(),
-        kind: match g.kind {
-            GameKind::Steam { .. } => "steam",
-            GameKind::Custom { .. } => "custom",
-        },
+        kind,
         cover: g.cover.clone(),
         spine_color: g.spine_color.clone(),
         disc_count: g.discs.len(),
+        app_id,
+        executable,
+        args,
+        working_dir,
+        requires_elevation,
     }
 }
 

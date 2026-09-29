@@ -160,6 +160,8 @@ pub enum Intent {
     CreateGame(NewGame),
     LabelEdit(String),
     RenameGame(GameId, String),
+    /// Edição completa (A4): nome e tipo, com a validação da criação.
+    UpdateGame(GameId, NewGame),
     SetSetting(SettingChange),
 }
 
@@ -669,6 +671,14 @@ impl<D: DriveBackend, L: Launcher> App<D, L> {
             Intent::RenameGame(id, name) => match self.state {
                 State::GameOptions { game } if game == id => {
                     self.catalog.rename_game(id, &name).map_err(IntentError::Invalid)?;
+                    self.persist();
+                    Ok(())
+                }
+                _ => ignored,
+            },
+            Intent::UpdateGame(id, n) => match self.state {
+                State::GameOptions { game } if game == id => {
+                    self.catalog.update_game(id, &n.name, n.kind).map_err(IntentError::Invalid)?;
                     self.persist();
                     Ok(())
                 }

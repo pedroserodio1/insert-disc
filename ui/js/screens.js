@@ -443,38 +443,60 @@ export function catalogError(snap, ctx) {
   return { el: h('div', { class: 'screen' }, headEl(t('catalog.error.title'), t('catalog.error.body')), list.el), items: list.items, index: initialIndex(list.items), hints: [{ btn: 'accept', text: t('action.select'), primary: true, fn: () => ctx.accept() }], back: null };
 }
 
-// ---------- formulários (locais à UI; enviam create_game / rename_game) ----------
+// ---------- escolher jogo instalado da Steam (A3) ----------
+function steamPick(snap, ctx) {
+  const games = ctx.ui.steamGames ?? [];
+  const done = () => ctx.closeForm(); // nome e AppID vêm da Steam: o núcleo não recusa
+  const defs = [
+    ...games.map((g) => ({ label: g.name, value: String(g.app_id), run: async () => { await ctx.send({ type: 'create_game', name: g.name, kind: 'steam', app_id: g.app_id }); done(); } })),
+    { label: t('steam.pick.manual'), run: () => ctx.openForm('steam-manual') },
+  ];
+  const list = makeList(defs, { scroll: true });
+  return { el: h('div', { class: 'screen' }, headEl(t('steam.pick.title')), list.el), items: list.items, index: 0, hints: [{ btn: 'accept', text: t('action.select'), primary: true, fn: () => ctx.accept() }, { btn: 'back', text: t('action.cancel'), fn: () => ctx.closeForm() }], back: () => ctx.closeForm() };
+}
+
+// ---------- formulários (locais à UI; enviam create_game / update_game) ----------
 export function form(kind, snap, ctx) {
+  if (kind === 'steam-pick') return steamPick(snap, ctx);
+  if (kind === 'steam-manual') kind = 'steam';
+  const editing = kind === 'edit';
+  const g = editing ? snap.game : null;
+  const gameKind = editing ? g.kind : kind; // 'steam' | 'custom'
   const field = (id, label, value = '', multiline = false) => {
     const input = multiline ? h('textarea', { id, rows: '3' }) : h('input', { id, type: 'text', autocomplete: 'off', spellcheck: 'false' });
     input.value = value;
     return { input, el: h('div', { class: 'field' }, h('label', { class: 'tipo-apoio', for: id }, label), input) };
   };
-  const editing = kind === 'edit';
-  const name = field('f-name', t('form.name'), editing ? snap.game.name : '');
+  const name = field('f-name', t('form.name'), g?.name ?? '');
   const fields = [name];
-  let appId, exe, args, wd;
-  if (kind === 'steam') { appId = field('f-app', t('form.app_id')); fields.push(appId); }
-  if (kind === 'custom') {
-    exe = field('f-exe', t('form.executable')); args = field('f-args', t('form.args'), '', true); wd = field('f-wd', t('form.workdir'));
+  let appId, exe, args, wd, elev;
+  const note = h('div', { class: 'tipo-apoio', style: 'color:var(--policarbonato)' });
+  if (gameKind === 'steam') { appId = field('f-app', t('form.app_id'), g?.app_id ? String(g.app_id) : ''); fields.push(appId); }
+  else {
+    exe = field('f-exe', t('form.executable'), g?.executable ?? ''); args = field('f-args', t('form.args'), (g?.args ?? []).join('\n'), true); wd = field('f-wd', t('form.workdir'), g?.working_dir ?? '');
     fields.push(exe, args, wd);
+    elev = h('input', { id: 'f-elev', type: 'checkbox' });
+    elev.checked = !!g?.requires_elevation;
+    const showBat = () => { note.textContent = /\.(bat|cmd)\s*$/i.test(exe.input.value) ? t('form.bat_warning') : ''; };
+    exe.input.addEventListener('input', showBat);
+    showBat();
   }
   const err = h('div', { class: 'err tipo-apoio', role: 'alert' });
-  const title = { steam: 'form.steam.title', custom: 'form.custom.title', edit: 'form.edit.title' }[kind];
+  const title = editing ? 'form.edit.title' : gameKind === 'steam' ? 'form.steam.title' : 'form.custom.title';
 
   const submit = async () => {
     err.textContent = '';
     const nm = name.input.value.trim();
     if (!nm) { err.textContent = t('form.error.name'); return; }
-    let res;
-    if (editing) res = await ctx.send({ type: 'rename_game', game_id: snap.game.game_id, name: nm });
-    else if (kind === 'steam') {
+    let body;
+    if (gameKind === 'steam') {
       const id = Number(appId.input.value.trim());
       if (!Number.isInteger(id) || id <= 0) { err.textContent = t('form.error.app_id'); return; }
-      res = await ctx.send({ type: 'create_game', name: nm, kind: 'steam', app_id: id });
+      body = { name: nm, kind: 'steam', app_id: id };
     } else {
-      res = await ctx.send({ type: 'create_game', name: nm, kind: 'custom', executable: exe.input.value.trim(), args: args.input.value.split('\n').map((l) => l.trim()).filter(Boolean), working_dir: wd.input.value.trim() || undefined });
+      body = { name: nm, kind: 'custom', executable: exe.input.value.trim(), args: args.input.value.split('\n').map((l) => l.trim()).filter(Boolean), working_dir: wd.input.value.trim() || undefined, requires_elevation: elev.checked };
     }
+    const res = await ctx.send(editing ? { type: 'update_game', game_id: g.game_id, ...body } : { type: 'create_game', ...body });
     if (res?.invalid) err.textContent = t('form.error.invalid', { reason: res.invalid });
     else ctx.closeForm();
   };
@@ -482,9 +504,11 @@ export function form(kind, snap, ctx) {
   const cancel = h('button', { class: 'btn secondary focusable tipo-corpo' }, t('action.cancel'));
   const items = [
     ...fields.map((f) => ({ el: f.input, run: () => f.input.focus(), isField: true })),
+    ...(elev ? [{ el: elev, run: () => { elev.checked = !elev.checked; }, isField: true }] : []),
     { el: save, run: submit }, { el: cancel, run: () => ctx.closeForm() },
   ];
-  const el = h('div', { class: 'screen' }, headEl(t(title)), h('div', { class: 'form' }, fields.map((f) => f.el), err, h('div', { class: 'btns', style: 'display:flex;gap:calc(var(--u)*2)' }, save, cancel)));
+  const elevRow = elev && h('div', { class: 'field', style: 'display:flex;align-items:center;gap:var(--u)' }, elev, h('label', { class: 'tipo-apoio', for: 'f-elev' }, t('form.elevation')));
+  const el = h('div', { class: 'screen' }, headEl(t(title)), h('div', { class: 'form' }, fields.map((f) => f.el), elevRow, note, err, h('div', { class: 'btns', style: 'display:flex;gap:calc(var(--u)*2)' }, save, cancel)));
   for (const f of fields) f.input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && f.input.tagName === 'INPUT') { e.preventDefault(); submit(); } });
   return { el, items, index: 0, hints: [{ btn: 'accept', text: t('action.select'), primary: true, fn: () => ctx.accept() }, { btn: 'back', text: t('action.cancel'), fn: () => ctx.closeForm() }], back: () => ctx.closeForm(), isForm: true, focusInput: name.input };
 }

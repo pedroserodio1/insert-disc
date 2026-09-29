@@ -99,6 +99,21 @@ fn parse_setting(v: &Value) -> Result<SettingChange, String> {
     })
 }
 
+fn parse_new_game(v: &Value) -> Result<NewGame, String> {
+    let name = str_of(v, "name")?.to_string();
+    let kind = match str_of(v, "kind")? {
+        "steam" => GameKind::Steam { app_id: v.get("app_id").and_then(Value::as_u64).and_then(|n| u32::try_from(n).ok()).ok_or("app_id inválido")? },
+        "custom" => GameKind::Custom {
+            executable: str_of(v, "executable")?.into(),
+            args: v.get("args").and_then(Value::as_array).map(|a| a.iter().filter_map(|x| x.as_str().map(String::from)).collect()).unwrap_or_default(),
+            working_dir: v.get("working_dir").and_then(Value::as_str).map(Into::into),
+            requires_elevation: v.get("requires_elevation").and_then(Value::as_bool).unwrap_or(false),
+        },
+        k => return Err(format!("tipo de jogo desconhecido: {k}")),
+    };
+    Ok(NewGame { name, kind })
+}
+
 fn parse_intent(v: &Value) -> Result<Intent, String> {
     Ok(match str_of(v, "type")? {
         "select" => Intent::Select(uuid_of(v, "game_id")?),
@@ -112,20 +127,8 @@ fn parse_intent(v: &Value) -> Result<Intent, String> {
         "label_edit" => Intent::LabelEdit(str_of(v, "text")?.to_string()),
         "rename_game" => Intent::RenameGame(uuid_of(v, "game_id")?, str_of(v, "name")?.to_string()),
         "set_setting" => Intent::SetSetting(parse_setting(v)?),
-        "create_game" => {
-            let name = str_of(v, "name")?.to_string();
-            let kind = match str_of(v, "kind")? {
-                "steam" => GameKind::Steam { app_id: v.get("app_id").and_then(Value::as_u64).ok_or("app_id inválido")? as u32 },
-                "custom" => GameKind::Custom {
-                    executable: str_of(v, "executable")?.into(),
-                    args: v.get("args").and_then(Value::as_array).map(|a| a.iter().filter_map(|x| x.as_str().map(String::from)).collect()).unwrap_or_default(),
-                    working_dir: v.get("working_dir").and_then(Value::as_str).map(Into::into),
-                    requires_elevation: v.get("requires_elevation").and_then(Value::as_bool).unwrap_or(false),
-                },
-                k => return Err(format!("tipo de jogo desconhecido: {k}")),
-            };
-            Intent::CreateGame(NewGame { name, kind })
-        }
+        "create_game" => Intent::CreateGame(parse_new_game(v)?),
+        "update_game" => Intent::UpdateGame(uuid_of(v, "game_id")?, parse_new_game(v)?),
         t => return Err(format!("intenção desconhecida: {t}")),
     })
 }
@@ -186,6 +189,13 @@ impl Host {
 
     pub fn import_json(&mut self, text: &str) -> Result<(), String> {
         self.app.import_catalog(text).map_err(|_| "estante inválida ou fora das configurações".to_string())
+    }
+
+    /// Jogos instalados na Steam deste PC (A3): `{available, games:[{app_id,name}]}`.
+    pub fn steam_games(&self) -> Value {
+        let root = steam::find_steam();
+        let games: Vec<Value> = root.as_deref().map(steam::installed_games).unwrap_or_default().into_iter().map(|g| json!({ "app_id": g.app_id, "name": g.name })).collect();
+        json!({ "available": root.is_some(), "games": games })
     }
 
     /// Estado do drive falso e do lançador, para o painel de desenvolvimento.

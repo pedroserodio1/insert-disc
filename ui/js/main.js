@@ -36,7 +36,11 @@ const ctx = {
     return res;
   },
   accept: () => doAccept(),
-  openForm(kind) { ui.form = kind; onSnapshot(snap, true); },
+  async openForm(kind) {
+    // Steam: escolher da lista de instalados (A3); sem Steam ou sem jogos, digitar o AppID
+    if (kind === 'steam') { ui.steamGames = (await bridge.steamGames().catch(() => null))?.games ?? []; if (ui.steamGames.length) kind = 'steam-pick'; }
+    ui.form = kind; onSnapshot(snap, true);
+  },
   closeForm() { ui.form = null; onSnapshot(snap, true); },
   applyFullscreen(on) {
     const w = window.__TAURI__?.window?.getCurrentWindow?.();

@@ -17,7 +17,7 @@ Enviado inteiro a cada mudança (simples e sem ambiguidade; o volume é pequeno)
 |---|---|
 | `version` | Versão do contrato |
 | `state` | Nome do estado ([UX-STATES](UX-STATES.md)) |
-| `game` | Jogo em contexto (X): `game_id`, `name`, `kind`, `cover` (URL local servida pelo Tauri), `spine_color`, `disc_count` |
+| `game` | Jogo em contexto (X): `game_id`, `name`, `kind`, `cover` (URL local servida pelo Tauri), `spine_color`, `disc_count`, e para a edição `app_id`, `executable`, `args`, `working_dir`, `requires_elevation` |
 | `other_game` | Y, em `OTHER_GAME` / `KNOWN` |
 | `game_discs` | Discos do jogo em contexto (`disc_id`, `label`, `created_at`, `origin`), usados na tela de opções |
 | `media` | Última leitura: `label`, `physical`, `disc_id`, `ini_name`, `class` |
@@ -47,6 +47,7 @@ Enviado inteiro a cada mudança (simples e sem ambiguidade; o volume é pequeno)
 | `choose_game` | `game_id` | `REG_CHOOSE_GAME` |
 | `create_game` | `name`, `kind` (`steam` com `app_id`; `custom` com `executable`, `args`, `working_dir`) | `REG_CHOOSE_GAME` |
 | `rename_game` | `game_id`, `name` | `GAME_OPTIONS` |
+| `update_game` | `game_id` e os campos de `create_game` (`name`, `kind`, `app_id` ou `executable`, `args`, `working_dir`, `requires_elevation`) | `GAME_OPTIONS` (edição completa; mesma validação da criação, resposta `invalid` com o motivo) |
 | `label_edit` | `text` | `REG_LABEL_PREVIEW` |
 
 O núcleo **ignora** intenções inválidas para o estado atual: a resposta é `{"ignored": true}` (sem erro para a UI). Isso cobre entradas atrasadas ou duplicadas. Um jogo recusado pelo catálogo (por exemplo, AppID zero) volta `{"invalid": "..."}`; JSON malformado ou de tipo desconhecido volta erro HTTP 400.
