@@ -852,3 +852,23 @@ fn c2_a_chosen_drive_that_disappears_is_a_drive_problem_and_auto_follows_what_ex
     e.app.dispatch(Intent::SetSetting(SettingChange::Drive(None)), 8).unwrap();
     assert_eq!(e.app.snapshot().drive_in_use.as_deref(), Some("fake:0"));
 }
+
+// ---------- C12: leitura sem resposta ----------
+
+#[test]
+fn c12_a_read_that_never_answers_becomes_a_read_error_after_the_timeout() {
+    let mut e = env();
+    e.app.drive_mut().set_op_delay_ms(600_000); // o drive "trava"
+    e.select(e.x, 0);
+    e.app.drive_mut().insert_iso(e.x_iso.clone());
+    e.app.pump(10);
+    assert_eq!(e.name(), "READING");
+    e.app.pump(READ_TIMEOUT_MS - 1);
+    assert_eq!(e.name(), "READING");
+    e.app.pump(10 + READ_TIMEOUT_MS);
+    assert!(matches!(e.app.state(), State::Rejected { class: MediaClass::ReadError, .. }), "{:?}", e.app.state());
+    // o resultado tardio do drive não muda nada
+    e.app.drive_mut().set_op_delay_ms(0);
+    e.app.pump(20_000);
+    assert!(matches!(e.app.state(), State::Rejected { class: MediaClass::ReadError, .. }));
+}

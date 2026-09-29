@@ -83,3 +83,29 @@ Material para quando a fase Linux for confirmada. O autor não tem Linux instala
 | Pendrive live (sessão temporária) | Hardware real: drive USB, udisks2, `eject`, gravação, gamepad, GPU real (NVIDIA/Wayland), gamescope | Instalação persistente, empacotamento instalado, Steam instalada com biblioteca real (salvo com persistência) |
 | Máquina virtual | Build, UI, catálogo, drive falso, udisks2 com ISO anexada como CD virtual (hipótese) | GPU real, gamescope com aceleração real, gravação física, gaveta; o repasse USB do drive é possível, mas não verificado |
 | Loop device (`losetup` de uma ISO) | Leitura de ISO pelo caminho de bloco do Linux | Eventos de mídia óptica (um loop device não é uma unidade de CD), gaveta, mídia virgem, áudio |
+
+## Cobertura dos cenários
+
+Onde cada cenário é exercitado hoje. `flows` = `crates/insert-disc-core/tests/flows.rs` (drive falso); `ini` = testes de `gameini.rs`; `windrive` = `crates/insert-disc-host/tests/windrive.rs` (ISO montada de verdade, `--ignored`); `host` = `crates/insert-disc-host/tests/api.rs`.
+
+| Cenário | Teste |
+|---|---|
+| C1, C2, C21 | `flows`: `c1_…`, `c2_and_c21_…` |
+| C3, C22 | `flows`: `c3_and_c22_…`; `unknown_disc_inserted_without_selection_…` |
+| C4, C5, C6, C7, C10, C11, C19 | `flows`: `c4_c5_c6_c7_c10_c11_c19_rejection_classes`, `c6_extra_keys_…` |
+| C8, C9 | `flows`: `full_registration_on_cdrw_…`, `erase_*`, `c26_…` |
+| C12 | `flows`: `c12_a_read_that_never_answers_…` (tempo limite `READ_TIMEOUT_MS`, [Q11](OPEN-QUESTIONS.md#q11-timeouts)) |
+| C13 | `flows`: `c13_…`; caminho A: `windrive` (unidade que já chega com mídia) |
+| C14 | `flows`: `c20_…` (rearma na remoção) |
+| C15 | `flows`: `c15_tray_hints_…` |
+| C16, C29 | `flows`: `c16_…`, `erase_needs_double_confirmation_…` |
+| C17, C18 | `flows`: `c18_…`, `media_inserted_outside_the_library_…` |
+| C20 | `flows`: `c20_…` |
+| C23 | `flows`: `c23_…`, `a5_removing_the_disc_or_going_back_during_a_read_cancels_it` |
+| C24 | `flows`: `c24_…`, `a5_pulling_the_disc_during_a_burn_…` |
+| C25, C26 | `flows`: `c25_…`, `c26_…` |
+| C27 | `flows`: `c27_…`; `host`: `corrupt_catalog_is_reported_and_left_untouched` |
+| C28 | `ini`: `writer_cannot_inject_a_second_id` |
+| C30 | `flows`: `c30_…` |
+
+Além destes: operações lentas com progresso (`a5_*`, `slow_drive_is_visible_…`), escolha e sumiço de unidade (`c2_a_chosen_drive_…`) e a ISO montada aparecendo, sendo lida e desaparecendo (`windrive`).

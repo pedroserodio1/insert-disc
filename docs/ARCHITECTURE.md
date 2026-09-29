@@ -13,9 +13,19 @@ Este documento descreve o nível conceitual. Nomes de módulos são ilustrativos
 | **Lançador (política)** | Transforma uma entrada do catálogo em uma `LaunchRequest` (URI Steam ou executável + lista de argumentos). Não executa nada. | Sim |
 | **Camada de drive** | Interface `DriveBackend`: eventos de mídia, leitura, gaveta, gravação e apagamento ([DRIVE-LAYER](DRIVE-LAYER.md)). | Interface sim; implementações não |
 | **Gravador** | Monta a imagem (`GAME.INI` + label) e orquestra a gravação via `DriveBackend` ([BURNING](BURNING.md)). | Orquestração sim; gravação física fica no backend |
-| **Integração com o sistema** | Interface `SystemIntegration`: executar a `LaunchRequest`, abrir URI, descobrir a Steam, foco e janela, armazenamento de segredo (chave de API). | Interface sim; implementações não |
+| **Integração com o sistema** | No código, não é uma interface única: o trait `Launcher` (núcleo) executa a `LaunchRequest`; descobrir a Steam, abrir URI e capas são módulos do host (`steam`, `launcher`, `covers`); foco e janela ficam no app Tauri. **Ainda não existe** armazenamento de segredo (chave de API, [Q8](OPEN-QUESTIONS.md#q8-onde-guardar-a-chave-de-api)). | `Launcher` sim; módulos do host não |
 | **Entrada de controle** | Fonte de eventos de gamepad: Gamepad API na webview **ou** leitura no Rust (`gilrs`) enviada à UI. A escolha depende do spike [W1](RISKS-AND-SPIKES.md#w1-gamepad-no-webview2). | Depende da escolha |
 | **Provedor de capas** | Capas locais (cache da Steam, imagem do usuário) e serviço online opcional ([ADR-0015](adr/0015-i18n-e-capas-online-opcionais.md)). | Parcial (os caminhos da Steam variam) |
+
+## Estrutura do código
+
+| Pasta | O que tem |
+|---|---|
+| `crates/insert-disc-core` | Núcleo portátil, sem API de SO: `app` (máquina de estados, operações assíncronas do drive), `catalog`, `gameini`, `iso` (leitura e geração de ISO 9660), `classify`, `launch` (política e trait `Launcher`), `drive` (trait `DriveBackend`), `fake` (`FakeIsoDrive`), `snapshot` (o JSON da UI). Testes de fluxo em `tests/flows.rs`. |
+| `crates/insert-disc-host` | Tudo que toca o sistema, sem depender do Tauri: `Host` (API JSON do [UI-CONTRACT](UI-CONTRACT.md), persistência, capas, log), `windrive` (drive do Windows, leitura), `anydrive` (enum falso/Windows), `launcher` (execução sem shell), `steam` (VDF/ACF, capas do cache), `covers` (pipeline de capa), `gamepad` (`gilrs`, atrás de feature), `demo` e o servidor de desenvolvimento (`bin/dev.rs`). |
+| `apps/desktop` | App Tauri (fora do workspace): janela, comandos `invoke`, protocolo `cover`, instância única, thread do controle. |
+| `ui/` | Front-end em JS e CSS puros ([ADR-0021](adr/0021-frontend-js-css-sem-framework.md)); testes em `ui/test`. |
+| `spikes/` | Experimentos descartáveis dos riscos ([RISKS-AND-SPIKES](RISKS-AND-SPIKES.md)). |
 
 ## Fronteira portátil e plataforma
 
@@ -73,7 +83,7 @@ flowchart LR
   SI -.-> LS
 ```
 
-Regra: **nada dentro do núcleo importa API de sistema operacional.** Qualquer chamada Win32, COM, D-Bus ou ioctl fica numa implementação de `DriveBackend` ou `SystemIntegration`.
+Regra: **nada dentro do núcleo importa API de sistema operacional.** Qualquer chamada Win32, COM, D-Bus ou ioctl fica numa implementação de `DriveBackend` ou `Launcher`, ou num módulo do `insert-disc-host`.
 
 ## Fluxo principal: jogar
 

@@ -18,6 +18,10 @@ use crate::launch::{request_for, LaunchError, Launcher};
 /// Tempo mínimo da ficha em `MATCH` antes de lançar (FRONTEND-DESIGN `dur-ficha-min`).
 pub const FICHA_MIN_MS: u64 = 600;
 
+/// Leitura de mídia sem resposta por tanto tempo vira erro de leitura (Q11, C12). Padrão até medir
+/// no drive real (W2/W3).
+pub const READ_TIMEOUT_MS: u64 = 10_000;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TrayHint {
     Opening,
@@ -237,6 +241,7 @@ pub struct App<D: DriveBackend, L: Launcher> {
     toast_seq: u64,
     pub(crate) progress: Option<u8>,
     pending: Option<Pending>,
+    pending_since: u64,
     pub persist_error: Option<String>,
 }
 
@@ -267,6 +272,7 @@ impl<D: DriveBackend, L: Launcher> App<D, L> {
             toast_seq: 0,
             progress: None,
             pending: None,
+            pending_since: 0,
             persist_error: None,
         };
         app.select_drive();
@@ -387,6 +393,7 @@ impl<D: DriveBackend, L: Launcher> App<D, L> {
         match self.drive_id.clone() {
             Some(d) => {
                 self.pending = Some(pending);
+                self.pending_since = self.now;
                 self.drive.start_op(&d, op, self.now);
                 self.drain_ops();
             }
@@ -459,6 +466,9 @@ impl<D: DriveBackend, L: Launcher> App<D, L> {
         }
         if self.pending.is_some() {
             self.drain_ops();
+        }
+        if matches!(self.pending, Some(Pending::Read(_) | Pending::Verify(_))) && now.saturating_sub(self.pending_since) >= READ_TIMEOUT_MS {
+            self.complete(OpResult::Read(Err(DriveError::Io("tempo esgotado".into()))));
         }
         match self.state.clone() {
             State::Identified { game } if now.saturating_sub(self.ficha_since) >= FICHA_MIN_MS => self.start_launch(game),
