@@ -83,6 +83,7 @@ Legenda de hardware: **—** nenhum · **drive** drive USB · **drive+mídia** d
 - **Como validar:** app em tela cheia lança um jogo Steam e um `custom`. Observar se o jogo aparece por cima, se o app deve minimizar, e como o usuário volta (Alt+Tab, botão Guide, fim do jogo). Testar também a opção de detectar o fim por PID (`custom`) e por nome de processo.
 - **Sucesso:** o jogo sempre fica na frente e o retorno ao app é previsível, com um procedimento documentado.
 - **Falha:** o app briga pelo foco. Nesse caso, a regra passa a ser minimizar sempre e nunca pedir foco sozinho.
+- **Resultado parcial (2026-09-29):** com um "jogo" fictício de janela própria ([spikes/w8-focus](../spikes/w8-focus/README.md)), o app lança, termina o loading e **minimiza**, sem pedir foco; ao voltar, retoma a tela cheia. A medição de quem ganha o primeiro plano não é limpa (o PC de teste tem outros programas em uso), então a regra da falha vale de saída. **Falta:** Steam, fim do jogo (Q6) e botão Guide.
 
 ### W9. Empacotamento, assinatura e SmartScreen
 

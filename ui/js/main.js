@@ -25,6 +25,7 @@ let busy = false;
 let hold = null;
 let toastId = 0;
 let toastTimer = 0;
+let prevState = null;
 
 // ---------- contexto entregue às telas ----------
 const ctx = {
@@ -42,6 +43,12 @@ const ctx = {
     ui.form = kind; onSnapshot(snap, true);
   },
   closeForm() { ui.form = null; onSnapshot(snap, true); },
+  stepAside() {
+    const w = window.__TAURI__?.window?.getCurrentWindow?.();
+    if (!w) return; // no navegador não há janela para minimizar
+    ui.steppedAside = true;
+    Promise.resolve(w.setFullscreen(false)).catch(() => {}).finally(() => w.minimize().catch(() => {}));
+  },
   applyFullscreen(on) {
     const w = window.__TAURI__?.window?.getCurrentWindow?.();
     if (w) w.setFullscreen(on);
@@ -169,6 +176,12 @@ const input = createInput({
   deviceChanged(d) { device = d; renderBar(); },
 });
 window.addEventListener('blur', holdCancel);
+// ao voltar (Alt+Tab), quem estava em tela cheia volta a ela
+window.addEventListener('focus', () => {
+  if (!ui.steppedAside) return;
+  ui.steppedAside = false;
+  if (snap?.settings.window_mode === 'fullscreen') ctx.applyFullscreen(true);
+});
 // controle lido pelo Rust (gilrs, D1): o app só emite com a janela em foco; sem a feature, nada chega
 window.__TAURI__?.event?.listen('pad', (e) => input.feedPad(e.payload.name, e.payload.pressed, e.payload.device));
 
@@ -241,6 +254,10 @@ function onSnapshot(s, force = false) {
     ui.modeApplied = true;
     if (s.settings.window_mode === 'fullscreen') ctx.applyFullscreen(true);
   }
+  // W8: o jogo foi lançado e o loading terminou: o app sai da frente (minimiza) e nunca pede foco
+  // sozinho; o usuário volta pelo Alt+Tab ou pela barra de tarefas. Fim do jogo não é detectado (Q6).
+  if (prevState === 'LAUNCHING' && s.state === 'LIBRARY') ctx.stepAside();
+  prevState = s.state;
   if (s.focus_hint) ui.libFocusId = s.focus_hint;
   showToast(s.toast);
 
