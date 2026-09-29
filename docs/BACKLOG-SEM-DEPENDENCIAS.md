@@ -6,7 +6,7 @@ Posição em 2026-09-29. "Sem nada externo" = só código e este PC: **sem drive
 
 | Peça | Estado |
 |---|---|
-| Núcleo (`insert-disc-core`): `GAME.INI`, catálogo, ISO, drive falso, máquina de estados, snapshot | Feito, 57 testes |
+| Núcleo (`insert-disc-core`): `GAME.INI`, catálogo, ISO, drive falso, máquina de estados, snapshot | Feito, 59 testes |
 | `insert-disc-host` (API JSON, servidor de desenvolvimento) e UI (`ui/`) | Feito; fluxo de jogar e de cadastro verificados no navegador com o drive falso |
 | App desktop (`apps/desktop`) | **Compila; nunca foi aberto** |
 | Spikes W2 (parcial), W6, W7, W12 | Rodados; W13 parcial |
@@ -18,6 +18,8 @@ O app de hoje é uma **demonstração**: estante de exemplo recriada a cada aber
 Legenda: **S** pequeno (horas), **M** médio, **G** grande.
 
 ### A. Tornar o app real
+
+> **Antes de A1:** fazer **E6** (abrir o app desktop) e decidir [Q7](OPEN-QUESTIONS.md): em release o drive falso só entra por flag explícita; travar o caminho de `Host::demo` (`remove_dir_all`). A2 e A3 compartilham um único módulo de localização da Steam (erro `SteamMissing`); os testes de A3 usam fixtures de VDF/ACF, não a Steam real. A2: trava = variável de ambiente ou flag de linha de comando; padrão só registra. A5 vem antes de C1 (define o modelo de threads).
 
 | # | Item | Por quê | Pronto quando | Tam. |
 |---|---|---|---|---|
@@ -62,13 +64,25 @@ Legenda: **S** pequeno (horas), **M** médio, **G** grande.
 | E5 | **Arquivos de projeto**: `CONTRIBUTING`, modelos de issue e de PR, política de segurança do GitHub | Presentes e linkados no README | S |
 | E6 | **Abrir e verificar o app desktop** (`apps/desktop`) no WebView2 | A janela sobe, a UI funciona, `Ctrl+Shift+D` mostra o painel; problemas achados viram itens aqui | S |
 
+### E7–E11. Lacunas descobertas na revisão
+
+| # | Item | Tam. |
+|---|---|---|
+| E7 | Checklist de conformidade com [FRONTEND-DESIGN](FRONTEND-DESIGN.md): clique direito abre opções (§7), botão voltar do mouse, roda do mouse na estante, estante esmaecida atrás da caixa aberta (§6.3), escolha do drive nas configurações | M |
+| E8 | Trait `SystemIntegration` não existe (só `Launcher`): criar ou ajustar ARCHITECTURE, DRIVE-LAYER e ADR-0010 | S |
+| E9 | `apps/desktop` no CI; protocolo de assets do Tauri (pré-requisito de B1); `bundle.active=false` só até E4 | S |
+| E10 | ARCHITECTURE.md com a estrutura real; cenários C1–C30 de TESTING-WITH-ISO mapeados para `flows.rs`; testes de import/export do Host | S |
+| E11 | Q11 (timeout de `read_media`), nota de disco editável, confirmação de import na UI, `focus_hint` com mais de um cliente | S |
+
+Notas de critério: **C1**: ISO montada aparece como Microsoft Virtual DVD-ROM, então `MediaInfo.physical` fica `Unknown` (esperado). **D1**: feature cargo `gilrs`; exige canal de eventos Rust→UI (Tauri events). **E4**: build local sem assinatura; baixar WiX/NSIS depende de rede.
+
 ### F. Decisões que já têm padrão recomendado
 
-Perguntas abertas que dá para fechar com a recomendação da própria doc e seguir (registrar como ADR quando decididas): [Q19](OPEN-QUESTIONS.md#q19-importar-estante) (importar substitui), [Q20](OPEN-QUESTIONS.md#q20-modo-de-janela-padrão) (janela na primeira execução), [Q21](OPEN-QUESTIONS.md#q21-ordenação-da-biblioteca), [Q22](OPEN-QUESTIONS.md#q22-instância-única), [Q23](OPEN-QUESTIONS.md#q23-logs), [Q24](OPEN-QUESTIONS.md#q24-idioma-e-plural). Nenhuma exige informação externa; falta apenas o seu "sim".
+Perguntas abertas que dá para fechar com a recomendação da própria doc e seguir (registrar como ADR quando decididas): [Q19](OPEN-QUESTIONS.md#q19-importar-estante) (importar substitui), [Q20](OPEN-QUESTIONS.md#q20-modo-de-janela-padrão) (janela na primeira execução), [Q21](OPEN-QUESTIONS.md#q21-ordenação-da-biblioteca), [Q22](OPEN-QUESTIONS.md#q22-instância-única), [Q23](OPEN-QUESTIONS.md#q23-logs), [Q24](OPEN-QUESTIONS.md#q24-idioma-e-plural). Já decididas no código e ainda abertas na doc (registrar em ADR): Q9, Q10, Q12, Q13, Q15, Q18. Nenhuma exige informação externa; falta apenas o seu "sim".
 
 ## Ordem sugerida
 
-1. **A1 → E6** (o app abre, guarda dados): sem isso nada do resto é usável.
+1. **E6 → A1** (o app abre, guarda dados): sem isso nada do resto é usável.
 2. **A2 + A3 + A4** (abrir jogo, importar da Steam, editar): o app já serve para jogar clicando na estante, mesmo sem drive.
 3. **A5** (drive assíncrono): destrava o feedback de leitura e gravação.
 4. **B1–B3** (capas).
