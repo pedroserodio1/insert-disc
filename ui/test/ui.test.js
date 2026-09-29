@@ -74,3 +74,38 @@ test('safeUrl só aceita capa do app, caminho relativo e asset local', async () 
   }
   assert.equal(safeUrl('/a"b\\c.png'), '/ab' + 'c.png'); // aspas e barra invertida não escapam do url("...")
 });
+
+test('controle sintético: um evento por aperto, repetição só do direcional, soltar o aceitar', async () => {
+  const { createPadTracker, syntheticPad, kindOf } = await load('input.js');
+  const log = [];
+  const devices = [];
+  const tracker = createPadTracker({ press: (n, o) => log.push(`${n}${o?.repeat ? '*' : ''}`), release: (n) => log.push(`~${n}`) }, (d) => devices.push(d));
+  const held = (...names) => [syntheticPad(names)];
+
+  tracker.step(0, held('down'));
+  tracker.step(100, held('down')); // ainda dentro do atraso da repetição (400 ms)
+  assert.deepEqual(log, ['down']);
+  tracker.step(400, held('down'));
+  tracker.step(440, held('down')); // dentro do intervalo (80 ms)
+  tracker.step(480, held('down'));
+  assert.deepEqual(log, ['down', 'down*', 'down*']);
+  tracker.step(500, held());
+  tracker.step(520, held('down')); // soltou e apertou de novo: evento novo, sem repetição
+  assert.equal(log.at(-1), 'down');
+
+  log.length = 0;
+  tracker.step(1000, held('accept', 'x'));
+  tracker.step(2000, held('accept', 'x')); // aceitar e botões de ação nunca repetem
+  tracker.step(2100, held());
+  assert.deepEqual(log, ['accept', 'x', '~accept']);
+
+  // direcional analógico e nomes do "standard mapping"
+  log.length = 0;
+  tracker.step(3000, [{ id: 'x', buttons: [], axes: [-0.9, 0] }]);
+  tracker.step(3100, [{ id: 'x', buttons: [], axes: [0, 0] }]);
+  tracker.step(3200, [{ id: 'x', buttons: [], axes: [0.1, 0.8] }]);
+  assert.deepEqual(log, ['left', 'down']);
+
+  assert.equal(devices.at(-1), 'xbox');
+  assert.equal(kindOf({ id: 'Wireless Controller (STANDARD GAMEPAD Vendor: 054c)' }), 'playstation');
+});

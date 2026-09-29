@@ -16,6 +16,7 @@ uuid = { version = "1", features = ["v4", "serde"] }
 tiny_http = "0.12"
 image = { version = "0.25.10", default-features = false, features = ["jpeg", "png", "webp"] }
 base64 = "0.23.1"
+gilrs = { version = "0.11", optional = true }
 
 [[bin]]
 name = "insert-disc-dev"
@@ -23,3 +24,6 @@ path = "src/bin/dev.rs"
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Storage_FileSystem", "Win32_System_Diagnostics_Debug"] }
+
+[features]
+gilrs = ["dep:gilrs"]

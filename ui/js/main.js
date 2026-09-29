@@ -163,6 +163,8 @@ const input = createInput({
   deviceChanged(d) { device = d; renderBar(); },
 });
 window.addEventListener('blur', holdCancel);
+// controle lido pelo Rust (gilrs, D1): o app só emite com a janela em foco; sem a feature, nada chega
+window.__TAURI__?.event?.listen('pad', (e) => input.feedPad(e.payload.name, e.payload.pressed, e.payload.device));
 
 // ---------- avisos (§5.6) ----------
 function showToast(tv) {
@@ -282,7 +284,7 @@ setInterval(refresh, POLL_MS);
 let devPanel = null;
 const toggleDev = () => {
   if (devPanel) { devPanel.remove(); devPanel = null; return; }
-  import('./dev.js').then((m) => { devPanel = m.mountDevPanel(); });
+  import('./dev.js').then((m) => { devPanel = m.mountDevPanel(input); });
 };
 if (new URLSearchParams(location.search).has('dev')) toggleDev();
 window.addEventListener('keydown', (e) => { if (e.ctrlKey && e.shiftKey && (e.key === 'D' || e.key === 'd')) { e.preventDefault(); toggleDev(); } });

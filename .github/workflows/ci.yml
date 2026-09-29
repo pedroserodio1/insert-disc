@@ -25,6 +25,9 @@ jobs:
       # o app desktop (Tauri) fica fora do workspace: job `desktop` abaixo
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
+      - name: Controle no Rust (gilrs, D1)
+        if: runner.os == 'Windows'
+        run: cargo test -p insert-disc-host --features gilrs
 
   docs-e-ui:
     runs-on: ubuntu-latest
@@ -48,5 +51,5 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: apps/desktop
-      - run: cargo check --locked
+      - run: cargo check --locked --features gilrs
         working-directory: apps/desktop

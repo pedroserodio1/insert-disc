@@ -5,7 +5,7 @@ import { h } from './components.js';
 
 const SCENARIOS = ['unknown', 'legacy', 'invalid', 'noini', 'blank_cdr', 'blank_cdrw', 'audio', 'unreadable', 'cdr_used', 'cdrw_used'];
 
-export function mountDevPanel() {
+export function mountDevPanel(input) {
   const panel = h('aside', { class: 'devpanel' });
   document.body.append(panel);
   const flags = {};
@@ -35,6 +35,7 @@ export function mountDevPanel() {
       h('h3', {}, 'Ações do drive'),
       btn('Remover disco', { cmd: 'remove' }), btn('Evento duplicado', { cmd: 'duplicate' }), btn('Desconectar', { cmd: 'disconnect' }), btn('Reconectar', { cmd: 'reconnect' }),
       h('h3', {}, 'Falhas'), flag('fail_burn', 'falha ao gravar'), flag('fail_erase', 'falha ao apagar'), flag('fail_open_tray', 'gaveta travada'),
+      h('h3', {}, 'Controle simulado'), ...['up', 'down', 'left', 'right', 'accept', 'back', 'x', 'y', 'lb', 'rb', 'menu'].map((n) => h('button', { onclick: () => input?.simulate(n) }, n)), h('button', { onclick: () => input?.simulate('accept', 2000) }, 'segurar accept (2 s)'),
       h('h3', {}, 'Duração das operações'), btn('instantâneo', { cmd: 'op_delay', ms: 0 }), btn('3 s', { cmd: 'op_delay', ms: 3000 }), btn('8 s', { cmd: 'op_delay', ms: 8000 }),
       h('h3', {}, 'Capacidades'), cap('tray_open'), cap('eject'), cap('write_cdr'), cap('write_cdrw'),
       h('h3', {}, 'Lançador'),

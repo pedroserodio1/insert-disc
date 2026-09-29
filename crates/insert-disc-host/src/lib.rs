@@ -5,6 +5,8 @@
 pub mod anydrive;
 pub mod covers;
 pub mod demo;
+#[cfg(feature = "gilrs")]
+pub mod gamepad;
 pub mod launcher;
 pub mod log;
 pub mod steam;

@@ -50,8 +50,8 @@ Legenda: **S** pequeno (horas), **M** médio, **G** grande.
 
 | # | Item | Pronto quando | Tam. |
 |---|---|---|---|
-| D1 | **`GamepadSource` com `gilrs` no Rust**, emitindo os eventos de navegação do [UI-CONTRACT](UI-CONTRACT.md#entrada-de-controle), atrás de uma opção de compilação | Compila e roda sem controle; eventos sintéticos chegam à UI. Assim o resultado do W1 só escolhe o padrão, sem exigir código novo | M |
-| D2 | **Simulador de controle na UI** (eventos sintéticos da Gamepad API) para testar navegação, repetição do direcional e segurar-para-confirmar | Testes automatizados de navegação por controle sem hardware | S |
+| D1 ✅ | **`GamepadSource` com `gilrs` no Rust**, emitindo os eventos de navegação do [UI-CONTRACT](UI-CONTRACT.md#entrada-de-controle), atrás de uma opção de compilação | Compila e roda sem controle; eventos sintéticos chegam à UI. Assim o resultado do W1 só escolhe o padrão, sem exigir código novo | M |
+| D2 ✅ | **Simulador de controle na UI** (eventos sintéticos da Gamepad API) para testar navegação, repetição do direcional e segurar-para-confirmar | Testes automatizados de navegação por controle sem hardware | S |
 
 ### E. Qualidade e entrega
 

@@ -14,6 +14,55 @@ const REPEATABLE = new Set(['up', 'down', 'left', 'right']);
 const REPEAT_DELAY = 400; // dur-repeticao-atraso
 const REPEAT_EVERY = 80; // dur-repeticao-intervalo
 
+/** Tipo de controle pelo id da Gamepad API (glifos). */
+export function kindOf(pad) {
+  return /054c|dualshock|dualsense|playstation|wireless controller/i.test(pad.id || '') ? 'playstation' : 'xbox';
+}
+
+/**
+ * Converte o estado dos controles em eventos, uma chamada por quadro (`step`). Puro (sem DOM):
+ * é isto que os testes e o simulador da UI alimentam com controles sintéticos.
+ */
+export function createPadTracker(handler, setDevice = () => {}) {
+  const held = new Map(); // nome -> { since, last }
+  return {
+    step(now, pads) {
+      const active = new Set();
+      for (const pad of pads) {
+        if (!pad) continue;
+        const down = new Set();
+        pad.buttons.forEach((b, i) => { if (b.pressed && PAD_BUTTONS[i]) down.add(PAD_BUTTONS[i]); });
+        const [ax, ay] = pad.axes;
+        if (ax < -0.5) down.add('left'); else if (ax > 0.5) down.add('right');
+        if (ay < -0.5) down.add('up'); else if (ay > 0.5) down.add('down');
+        for (const name of down) {
+          active.add(name);
+          const h = held.get(name);
+          if (!h) {
+            held.set(name, { since: now, last: now });
+            setDevice(kindOf(pad));
+            handler.press(name, { repeat: false });
+          } else if (REPEATABLE.has(name) && now - h.since >= REPEAT_DELAY && now - h.last >= REPEAT_EVERY) {
+            h.last = now;
+            handler.press(name, { repeat: true });
+          }
+        }
+      }
+      for (const name of [...held.keys()]) {
+        if (!active.has(name)) { held.delete(name); if (name === 'accept') handler.release('accept'); }
+      }
+    },
+  };
+}
+
+/** Controle sintético no "standard mapping" com os botões de `names` apertados. */
+export function syntheticPad(names, id = 'synthetic xbox controller') {
+  const idx = Object.fromEntries(Object.entries(PAD_BUTTONS).map(([i, n]) => [n, Number(i)]));
+  const buttons = Array.from({ length: 17 }, () => ({ pressed: false }));
+  for (const n of names) if (n in idx) buttons[idx[n]].pressed = true;
+  return { id, buttons, axes: [0, 0] };
+}
+
 export function createInput(handler) {
   let device = 'keys'; // 'keys' | 'xbox' | 'playstation'
   const setDevice = (d) => { if (d !== device) { device = d; handler.deviceChanged?.(d); } };
@@ -41,41 +90,32 @@ export function createInput(handler) {
   window.addEventListener('mousedown', () => setDevice('keys'), { passive: true });
 
   // Gamepad API: polling por quadro; sem foco de janela, nada é processado (SECURITY R10).
-  const held = new Map(); // nome -> { since, last }
-  function kindOf(pad) {
-    const id = pad.id || '';
-    return /054c|dualshock|dualsense|playstation|wireless controller/i.test(id) ? 'playstation' : 'xbox';
-  }
+  // Controles sintéticos (painel de desenvolvimento) entram pelo mesmo caminho.
+  const tracker = createPadTracker(handler, setDevice);
+  const synthetic = new Set();
+  let syntheticId = 'synthetic xbox controller';
   function frame(now) {
     if (document.hasFocus()) {
-      const active = new Set();
-      for (const pad of navigator.getGamepads?.() || []) {
-        if (!pad) continue;
-        const down = new Set();
-        pad.buttons.forEach((b, i) => { if (b.pressed && PAD_BUTTONS[i]) down.add(PAD_BUTTONS[i]); });
-        const [ax, ay] = pad.axes;
-        if (ax < -0.5) down.add('left'); else if (ax > 0.5) down.add('right');
-        if (ay < -0.5) down.add('up'); else if (ay > 0.5) down.add('down');
-        for (const name of down) {
-          active.add(name);
-          const h = held.get(name);
-          if (!h) {
-            held.set(name, { since: now, last: now });
-            setDevice(kindOf(pad));
-            handler.press(name, { repeat: false });
-          } else if (REPEATABLE.has(name) && now - h.since >= REPEAT_DELAY && now - h.last >= REPEAT_EVERY) {
-            h.last = now;
-            handler.press(name, { repeat: true });
-          }
-        }
-      }
-      for (const name of [...held.keys()]) {
-        if (!active.has(name)) { held.delete(name); if (name === 'accept') handler.release('accept'); }
-      }
+      const pads = [...(navigator.getGamepads?.() || [])];
+      if (synthetic.size) pads.push(syntheticPad(synthetic, syntheticId));
+      tracker.step(now, pads);
     }
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
 
-  return { device: () => device, setDevice };
+  return {
+    device: () => device,
+    setDevice,
+    /** Evento do controle lido pelo Rust (gilrs, D1): mantém apertado até o `pressed: false`. */
+    feedPad(name, pressed, device) {
+      if (pressed) { syntheticId = device === 'playstation' ? 'playstation controller' : 'synthetic xbox controller'; synthetic.add(name); }
+      else synthetic.delete(name);
+    },
+    /** Aperta `name` num controle sintético por `ms` (simulador, D2). */
+    simulate(name, ms = 120) {
+      synthetic.add(name);
+      setTimeout(() => synthetic.delete(name), ms);
+    },
+  };
 }

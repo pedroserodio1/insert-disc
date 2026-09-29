@@ -81,6 +81,26 @@ fn build_host() -> Host {
     Host::open(data_dir(), mode, real_launch)
 }
 
+/// Controle no Rust (D1): eventos de navegação para a UI, só com a janela em foco (SECURITY R10).
+#[cfg(feature = "gilrs")]
+fn start_gamepad(app: tauri::AppHandle) {
+    use tauri::Emitter;
+    std::thread::spawn(move || {
+        let Some(mut source) = insert_disc_host::gamepad::GamepadSource::new() else { return };
+        loop {
+            std::thread::sleep(Duration::from_millis(8));
+            let events = source.poll(); // sempre esvazia a fila, mesmo sem foco
+            let focused = app.get_webview_window("main").and_then(|w| w.is_focused().ok()).unwrap_or(false);
+            if !focused {
+                continue;
+            }
+            for e in events {
+                let _ = app.emit("pad", serde_json::json!({ "name": e.name, "pressed": e.pressed, "device": e.device }));
+            }
+        }
+    });
+}
+
 fn main() {
     let host: Shared = Arc::new(Mutex::new(build_host()));
     let ticker = host.clone();
@@ -97,6 +117,11 @@ fn main() {
                 let _ = w.set_focus();
             }
         }))
+        .setup(|_app| {
+            #[cfg(feature = "gilrs")]
+            start_gamepad(_app.handle().clone());
+            Ok(())
+        })
         .manage(host)
         // capas salvas: só nomes gerados pelo app (`Host::cover_file` valida), nunca caminhos
         .register_uri_scheme_protocol("cover", |ctx, request| {
