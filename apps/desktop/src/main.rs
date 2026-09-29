@@ -52,13 +52,15 @@ fn data_dir() -> std::path::PathBuf {
 
 /// `--demo`: estante de exemplo em pasta temporária (nunca toca os dados do usuário).
 /// `--fake-drive`: catálogo real com o drive falso (padrão só em builds de depuração; Q7, SECURITY R8).
+/// `--real-launch` / `--log-launch`: abre jogos de verdade ou só registra (padrão: real em release, log em depuração).
 fn build_host() -> Host {
     let args: Vec<String> = std::env::args().collect();
     let has = |f: &str| args.iter().any(|a| a == f);
     if has("--demo") {
         return Host::demo(std::env::temp_dir().join("insert-disc-demo"));
     }
-    Host::open(data_dir(), has("--fake-drive") || cfg!(debug_assertions))
+    let real_launch = has("--real-launch") || (!cfg!(debug_assertions) && !has("--log-launch"));
+    Host::open(data_dir(), has("--fake-drive") || cfg!(debug_assertions), real_launch)
 }
 
 fn main() {

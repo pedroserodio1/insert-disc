@@ -3,6 +3,8 @@
 //! Nada aqui depende de Tauri: o app desktop e o servidor de desenvolvimento usam o mesmo `Host`.
 
 pub mod demo;
+pub mod launcher;
+pub mod steam;
 
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
@@ -15,11 +17,13 @@ use insert_disc_core::launch::{LaunchError, LaunchRequest, Launcher};
 use serde_json::{json, Value};
 use uuid::Uuid;
 
-/// Lançador de desenvolvimento: só registra o que seria executado (nunca abre jogo).
+/// Lançador de desenvolvimento: registra o que seria executado e, só com `real`, executa de verdade
+/// (`launcher::launch_real`). O padrão nunca abre jogo.
 #[derive(Clone, Default)]
 pub struct LogLauncher {
     pub log: Arc<Mutex<Vec<String>>>,
     pub fail: Arc<Mutex<Option<LaunchError>>>,
+    pub real: bool,
 }
 
 impl Launcher for LogLauncher {
@@ -28,7 +32,7 @@ impl Launcher for LogLauncher {
             return Err(e);
         }
         self.log.lock().unwrap().push(format!("{req:?}"));
-        Ok(())
+        if self.real { launcher::launch_real(req) } else { Ok(()) }
     }
 }
 
@@ -139,10 +143,10 @@ impl Host {
     /// Modo real: catálogo em `data_dir/catalog.json` (ausente = estante vazia; corrompido =
     /// `CATALOG_ERROR`, sem sobrescrever). Ainda não há drive físico (W2-W5): sem `fake_drive`
     /// o app fica "sem drive"; com ele, o drive falso serve para experimentar (Q7, SECURITY R8).
-    pub fn open(data_dir: impl Into<std::path::PathBuf>, fake_drive: bool) -> Self {
+    pub fn open(data_dir: impl Into<std::path::PathBuf>, fake_drive: bool, real_launch: bool) -> Self {
         let dir = data_dir.into();
         let path = dir.join("catalog.json");
-        let launcher = LogLauncher::default();
+        let launcher = LogLauncher { real: real_launch, ..Default::default() };
         let mut drive = FakeIsoDrive::new(dir.join("burned"));
         if !fake_drive {
             drive.disconnect();

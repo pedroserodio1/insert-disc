@@ -67,7 +67,7 @@ fn temp(name: &str) -> std::path::PathBuf {
 fn real_mode_persists_the_shelf_and_starts_without_a_drive() {
     let dir = temp("open");
     let _ = std::fs::remove_dir_all(&dir);
-    let mut h = Host::open(&dir, true);
+    let mut h = Host::open(&dir, true, false);
     let s = snap(&mut h);
     assert_eq!((s["state"].as_str(), s["library"].as_array().unwrap().len()), (Some("LIBRARY"), 0));
     assert_eq!(h.intent(&json!({ "type": "add_game" })).unwrap(), json!({ "ok": true }));
@@ -77,7 +77,7 @@ fn real_mode_persists_the_shelf_and_starts_without_a_drive() {
     assert!(dir.join("catalog.json").exists());
     drop(h);
 
-    let mut h = Host::open(&dir, false); // "fechar e abrir" mantém o jogo
+    let mut h = Host::open(&dir, false, false); // "fechar e abrir" mantém o jogo
     assert!(snap(&mut h)["library"].as_array().unwrap().iter().any(|g| g["name"] == "Portal"));
     assert_eq!(h.dev_state()["scenarios"], json!([]));
     assert!(h.dev(&json!({ "cmd": "insert", "what": "unknown" })).is_err()); // sem modo demonstração
@@ -90,7 +90,7 @@ fn corrupt_catalog_is_reported_and_left_untouched() {
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     std::fs::write(dir.join("catalog.json"), "{ não é json").unwrap();
-    let mut h = Host::open(&dir, false);
+    let mut h = Host::open(&dir, false, false);
     assert_eq!(snap(&mut h)["state"], "CATALOG_ERROR");
     assert_eq!(std::fs::read_to_string(dir.join("catalog.json")).unwrap(), "{ não é json");
     let _ = std::fs::remove_dir_all(&dir);
