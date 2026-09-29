@@ -436,7 +436,7 @@ export function settings(snap, ctx) {
     { label: t('settings.fullscreen'), value: st.window_mode === 'fullscreen' ? t('common.on') : t('common.off'), run: () => { const on = st.window_mode !== 'fullscreen'; set('window_mode', on ? 'fullscreen' : 'windowed'); ctx.applyFullscreen(on); }, left: null, right: null },
     { label: t('settings.online_covers'), value: st.covers_online_enabled ? t('common.on') : t('common.off'), run: () => set('covers_online', !st.covers_online_enabled) },
     { label: t('settings.export'), run: () => ctx.exportCatalog() },
-    { label: t('settings.import'), run: () => ctx.importCatalog() },
+    { label: t('settings.import'), run: () => ctx.confirmImport() },
   ];
   const list = makeList(defs);
   return { el: h('div', { class: 'screen' }, headEl(t('settings.title')), list.el), items: list.items, index: ctx.ui.settingsIndex ?? 0, hints: [{ btn: 'accept', text: t('action.select'), primary: true, fn: () => ctx.accept() }, { btn: 'back', text: t('action.back'), fn: back(ctx) }], back: back(ctx), keepIndex: 'settingsIndex' };

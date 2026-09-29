@@ -59,7 +59,7 @@ Legenda: **S** pequeno (horas), **M** médio, **G** grande.
 |---|---|---|---|
 | E1 ✅ | **Testes da UI** (`node --test`, sem dependências): `i18n` (chaves presentes nos dois idiomas, plural), montagem de cada tela a partir de instantâneos de exemplo, validação de formulário | Rodam no CI | M |
 | E2 ✅ | **Script de contraste** dos tokens ([FRONTEND-DESIGN §3.1](FRONTEND-DESIGN.md#31-cor)) e checagem de que nenhum valor fora de token entrou no CSS | O CI falha se um par de cores ficar abaixo do mínimo | S |
-| E3 | **Re-medir o [W13](RISKS-AND-SPIKES.md#w13-desempenho-de-css-3d-no-webview2)** depois da correção da estante, com a janela do app visível | Números de quadros por segundo e tarefas longas registrados; ou o app desktop medido direto | S |
+| E3 ✅ (navegação; ver W13) | **Re-medir o [W13](RISKS-AND-SPIKES.md#w13-desempenho-de-css-3d-no-webview2)** depois da correção da estante, com a janela do app visível | Números de quadros por segundo e tarefas longas registrados; ou o app desktop medido direto | S |
 | E4 | **Build local do instalador** (sem assinatura) e um workflow de release no CI que publica o artefato do Windows | O instalador instala e abre numa conta limpa; assinatura fica para o [W9](RISKS-AND-SPIKES.md#w9-empacotamento-assinatura-e-smartscreen) | M |
 | E5 ✅ | **Arquivos de projeto**: `CONTRIBUTING`, modelos de issue e de PR, política de segurança do GitHub | Presentes e linkados no README | S |
 | E6 ✅ | **Abrir e verificar o app desktop** (`apps/desktop`) no WebView2 | A janela sobe, a UI funciona, `Ctrl+Shift+D` mostra o painel; problemas achados viram itens aqui | S |

@@ -76,6 +76,17 @@ const ctx = {
     });
     document.body.append(input); input.click();
   },
+  /** Importar substitui a estante (Q19): pede um segundo toque em até 5 s antes de abrir o seletor. */
+  confirmImport() {
+    if (!ui.importArmed) {
+      ui.importArmed = true;
+      flash('import_confirm');
+      setTimeout(() => { ui.importArmed = false; }, 5000);
+      return;
+    }
+    ui.importArmed = false;
+    ctx.importCatalog();
+  },
   importCatalog() {
     const input = h('input', { type: 'file', accept: 'application/json,.json', style: 'display:none' });
     input.addEventListener('change', async () => {

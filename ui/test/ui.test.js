@@ -45,7 +45,7 @@ test('toda chave estática usada em t(...) existe', async () => {
 test('chaves dinâmicas do núcleo têm texto em pt-BR e en', async () => {
   const { hasKey } = await load('i18n.js');
   const dyn = {
-    'toast.': ['focus', 'unknown', 'not_a_game', 'read_error', 'drive_removed', 'cover_refused'],
+    'toast.': ['focus', 'unknown', 'not_a_game', 'read_error', 'drive_removed', 'cover_refused', 'import_confirm'],
     'launch.error.': ['not_found', 'steam_missing', 'elevation_denied', 'generic'],
     'library.kind.': ['steam', 'custom'],
     'disc.origin.': ['burned', 'adopted'],

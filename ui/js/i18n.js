@@ -33,6 +33,7 @@ const L = {
   'toast.unknown': ['Disco desconhecido na gaveta. Selecione um jogo para associá-lo.', 'Unknown disc in the tray. Select a game to link it.'],
   'toast.not_a_game': ['O disco na gaveta não é um disco de jogo.', "The disc in the tray isn't a game disc."],
   'toast.read_error': ['Não deu para ler o disco na gaveta.', "Couldn't read the disc in the tray."],
+  'toast.import_confirm': ['Importar substitui a estante atual (o app guarda um backup). Selecione "Importar estante" de novo para continuar.', 'Importing replaces the current shelf (the app keeps a backup). Select "Import shelf" again to continue.'],
   'toast.cover_refused': ['Essa imagem não pôde ser usada como capa (use PNG, JPEG ou WebP de até 10 MB).', "That image can't be used as a cover (use a PNG, JPEG or WebP up to 10 MB)."],
   'settings.drive.auto': ['Automático', 'Automatic'],
   'settings.drive.missing': ['ausente', 'missing'],
