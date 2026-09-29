@@ -88,6 +88,26 @@ export function createInput(handler) {
     if (name === 'accept') handler.release('accept');
   });
   window.addEventListener('mousedown', () => setDevice('keys'), { passive: true });
+  // Mouse (FRONTEND-DESIGN §7): botão direito = opções (Y), botão "voltar" = B, roda = mover o foco.
+  window.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    if (isText(e.target)) return;
+    setDevice('keys');
+    handler.press('y', { repeat: false });
+  });
+  const backButton = (e) => { if (e.button === 3) { e.preventDefault(); setDevice('keys'); if (e.type === 'mouseup') handler.press('back', { repeat: false }); } };
+  window.addEventListener('mousedown', backButton);
+  window.addEventListener('mouseup', backButton);
+  window.addEventListener('auxclick', (e) => { if (e.button === 3 || e.button === 4) e.preventDefault(); });
+  let lastWheel = 0;
+  window.addEventListener('wheel', (e) => {
+    if (e.target.closest?.('.scroll, textarea') || Math.abs(e.deltaY) < 1) return; // listas rolam sozinhas
+    const now = performance.now();
+    if (now - lastWheel < 70) return; // um passo por "clique" da roda, sem disparar em rajada
+    lastWheel = now;
+    setDevice('keys');
+    handler.wheel?.(e.deltaY > 0 ? 1 : -1);
+  }, { passive: true });
 
   // Gamepad API: polling por quadro; sem foco de janela, nada é processado (SECURITY R10).
   // Controles sintéticos (painel de desenvolvimento) entram pelo mesmo caminho.

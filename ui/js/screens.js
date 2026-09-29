@@ -182,9 +182,14 @@ function rejectedDisc(snap) {
   return disc({ variant: 'generic', rejected: true });
 }
 
+/** Estante esmaecida atrás da cena da caixa (§6.3): só lombadas coloridas sob o véu. */
+function shelfGhost(snap) {
+  return h('div', { class: 'shelf-ghost', 'aria-hidden': 'true' }, (snap.library ?? []).slice(0, 40).map((g) => h('span', { class: 'b', style: spineColor(g.spine_color) ? `--c:${g.spine_color}` : '' })));
+}
+
 function caseScene(snap, ctx, { title, body, tray, verso, withSheet = false, actions = true }) {
   const g = snap.game;
-  const el = h('div', { class: 'screen' }, headEl(title, body), caseBox(g, verso ?? g?.name ?? t('reg.case_label'), tray));
+  const el = h('div', { class: 'screen' }, shelfGhost(snap), headEl(title, body), caseBox(g, verso ?? g?.name ?? t('reg.case_label'), tray));
   if (withSheet) {
     const s = sheet(snap, ctx.device());
     if (s) el.append(h('div', { class: 'sheet-wrap' }, s));

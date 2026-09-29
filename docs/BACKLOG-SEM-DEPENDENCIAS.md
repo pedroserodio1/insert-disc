@@ -68,7 +68,7 @@ Legenda: **S** pequeno (horas), **M** médio, **G** grande.
 
 | # | Item | Tam. |
 |---|---|---|
-| E7 | Checklist de conformidade com [FRONTEND-DESIGN](FRONTEND-DESIGN.md): clique direito abre opções (§7), botão voltar do mouse, roda do mouse na estante, estante esmaecida atrás da caixa aberta (§6.3), escolha do drive nas configurações | M |
+| E7 ✅ | Checklist de conformidade com [FRONTEND-DESIGN](FRONTEND-DESIGN.md): clique direito abre opções (§7), botão voltar do mouse, roda do mouse na estante, estante esmaecida atrás da caixa aberta (§6.3), escolha do drive nas configurações | M |
 | E8 | Trait `SystemIntegration` não existe (só `Launcher`): criar ou ajustar ARCHITECTURE, DRIVE-LAYER e ADR-0010 | S |
 | E9 (CI feito) | `apps/desktop` no CI; protocolo de assets do Tauri (pré-requisito de B1); `bundle.active=false` só até E4 | S |
 | E10 | ARCHITECTURE.md com a estrutura real; cenários C1–C30 de TESTING-WITH-ISO mapeados para `flows.rs`; testes de import/export do Host | S |

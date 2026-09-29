@@ -177,3 +177,9 @@ h1, h2, p, dl, dd, ul { margin: 0; padding: 0; }
   .casebox .cover { animation: none; }
   .disc.enter, .disc.spinning .face, .disc.reading::before { animation: none; }
 }
+
+/* §6.3: a estante fica esmaecida atrás da cena da caixa aberta */
+.shelf-ghost { position: absolute; left: 0; right: 0; top: 30vh; height: calc(var(--caixa-altura) + var(--u) * 3); display: flex; align-items: flex-end; gap: calc(var(--s) * 4); padding: 0 var(--margem-segura); overflow: hidden; pointer-events: none; z-index: -1; }
+.shelf-ghost .b { flex: 0 0 var(--lombada-largura); height: calc(var(--caixa-altura) * 0.85); background: var(--c, var(--policarbonato)); }
+.shelf-ghost::after { content: ""; position: absolute; inset: 0; background: var(--veu-estante); }
+.screen:has(> .shelf-ghost) { isolation: isolate; }

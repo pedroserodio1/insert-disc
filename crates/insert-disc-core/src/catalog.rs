@@ -170,6 +170,26 @@ pub enum LoadError {
     TooNew(u32),
 }
 
+/// Chave de ordenação (Q21): minúsculas e sem acento, para "Ágora" ficar junto de "Agora"; números
+/// já vêm antes das letras. Artigos iniciais ("The", "O") não são tratados na fase 1.
+pub fn sort_key(name: &str) -> String {
+    name.trim()
+        .chars()
+        .flat_map(char::to_lowercase)
+        .map(|c| match c {
+            'à' | 'á' | 'â' | 'ã' | 'ä' | 'å' => 'a',
+            'ç' => 'c',
+            'è' | 'é' | 'ê' | 'ë' => 'e',
+            'ì' | 'í' | 'î' | 'ï' => 'i',
+            'ñ' => 'n',
+            'ò' | 'ó' | 'ô' | 'õ' | 'ö' => 'o',
+            'ù' | 'ú' | 'û' | 'ü' => 'u',
+            'ý' | 'ÿ' => 'y',
+            c => c,
+        })
+        .collect()
+}
+
 fn is_batch(p: &Path) -> bool {
     p.extension().and_then(|e| e.to_str()).is_some_and(|e| e.eq_ignore_ascii_case("bat") || e.eq_ignore_ascii_case("cmd"))
 }
@@ -268,7 +288,7 @@ impl Catalog {
     /// Ordem de exibição (Q21): alfabética, sem diferenciar maiúsculas.
     pub fn sorted_games(&self) -> Vec<&Game> {
         let mut v: Vec<&Game> = self.games.iter().collect();
-        v.sort_by_key(|g| g.name.to_lowercase());
+        v.sort_by_cached_key(|g| sort_key(&g.name));
         v
     }
 
@@ -492,5 +512,20 @@ mod tests {
         }
         let names: Vec<_> = c.sorted_games().iter().map(|g| g.name.as_str()).collect();
         assert_eq!(names, ["Alpha", "beta", "zelda"]);
+    }
+}
+
+#[cfg(test)]
+mod sort_tests {
+    use super::*;
+
+    #[test]
+    fn library_order_ignores_case_and_accents_and_puts_numbers_first() {
+        let mut c = Catalog::default();
+        for n in ["Zelda", "árvore", "Arca", "Éter", "20 Minutes", "9 Kings", "ágora", "Agora"] {
+            c.add_game(Game::new(n, GameKind::Steam { app_id: 1 })).unwrap();
+        }
+        let names: Vec<&str> = c.sorted_games().iter().map(|g| g.name.as_str()).collect();
+        assert_eq!(names, ["20 Minutes", "9 Kings", "ágora", "Agora", "Arca", "árvore", "Éter", "Zelda"].map(|s| s));
     }
 }

@@ -159,6 +159,12 @@ const input = createInput({
       case 'x': case 'y': case 'menu': case 'lb': case 'rb': break;
     }
   },
+  // roda do mouse: estante anda de lado (←→); nas demais telas, sobe e desce
+  wheel(dir) {
+    if (!current || current.isForm) return;
+    if (current.onNav) current.onNav(dir > 0 ? 'right' : 'left', false);
+    else setFocus(focusIdx + dir);
+  },
   release(name) { if (name === 'accept') holdCancel(); },
   deviceChanged(d) { device = d; renderBar(); },
 });
@@ -231,6 +237,10 @@ function onSnapshot(s, force = false) {
   snap = s;
   const wanted = s.settings.locale ?? 'system';
   if (wanted !== localeKey) { localeKey = wanted; setLocale(wanted); force = true; }
+  if (!ui.modeApplied) { // Q20: a escolha de tela cheia persiste e vale já na abertura
+    ui.modeApplied = true;
+    if (s.settings.window_mode === 'fullscreen') ctx.applyFullscreen(true);
+  }
   if (s.focus_hint) ui.libFocusId = s.focus_hint;
   showToast(s.toast);
 
